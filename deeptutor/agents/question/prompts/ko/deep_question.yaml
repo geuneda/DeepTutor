@@ -1,0 +1,6 @@
+status:
+  topic_required: "커스텀 문제를 생성하려면 주제가 필요합니다."
+  parsing_uploaded: "업로드한 시험지를 파싱하고 템플릿을 뽑아내는 중입니다..."
+  parsing_directory: "파싱된 시험지를 불러오고 템플릿을 뽑아내는 중입니다..."
+  mimic_needs_paper: "모의고사 모드에는 업로드한 PDF나 파싱된 시험지 디렉터리가 필요합니다."
+  llm_call_failed: "LLM 호출에 실패했습니다."

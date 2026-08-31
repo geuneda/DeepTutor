@@ -164,7 +164,7 @@ export default function ImaConnectionFields({
                         </span>
                         {item.description && (
                           <span className="mt-0.5 line-clamp-2 block text-[11px] leading-snug text-[var(--muted-foreground)]">
-                            {item.description}
+                            {t(item.description)}
                           </span>
                         )}
                       </span>

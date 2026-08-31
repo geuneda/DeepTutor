@@ -16,7 +16,6 @@ import {
 import SettingsStatusPanel from "@/components/settings/SettingsStatusPanel";
 import {
   SETTINGS_CATEGORIES,
-  type Lang,
   type SettingsCategory,
 } from "@/lib/settings-nav";
 
@@ -35,10 +34,8 @@ type NetworkPreview = {
 };
 
 export default function SettingsHub() {
-  const { i18n } = useTranslation();
+  const { t } = useTranslation();
   const router = useRouter();
-  const zh = i18n.language?.toLowerCase().startsWith("zh");
-  const tr = useCallback((l: Lang) => (zh ? l.zh : l.en), [zh]);
 
   const { catalog, catalogEditable, diagnosticsResults, startTour } =
     useSettings();
@@ -96,13 +93,12 @@ export default function SettingsHub() {
       <header className="mb-7 flex items-start justify-between gap-4">
         <div className="min-w-0">
           <h1 className="font-serif text-[24px] font-semibold leading-tight tracking-tight text-[var(--foreground)]">
-            {tr({ zh: "设置", en: "Settings" })}
+            {t("Settings")}
           </h1>
           <p className="mt-1.5 max-w-xl text-[13px] leading-relaxed text-[var(--muted-foreground)]">
-            {tr({
-              zh: "管理外观、模型与服务、知识库、聊天与记忆。",
-              en: "Manage appearance, models and services, knowledge base, chat, and memory.",
-            })}
+            {t(
+              "Manage appearance, models and services, knowledge base, chat, and memory.",
+            )}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -113,17 +109,14 @@ export default function SettingsHub() {
             type="button"
             onClick={() => {
               setPendingPrompt(
-                tr({
-                  zh: "帮我配置一下 DeepTutor，先看看现在缺什么。",
-                  en: "Help me configure DeepTutor — start by checking what's missing.",
-                }),
+                t("Help me configure DeepTutor — start by checking what's missing."),
               );
               router.push("/home");
             }}
             className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--border)]/60 px-3 py-1.5 text-[12.5px] font-medium text-[var(--muted-foreground)] transition-colors hover:border-[var(--border)] hover:text-[var(--foreground)]"
           >
             <Sparkles size={13} />
-            {tr({ zh: "让 DeepTutor 帮我配", en: "Set up with DeepTutor" })}
+            {t("Set up with DeepTutor")}
           </button>
           <button
             type="button"
@@ -131,7 +124,7 @@ export default function SettingsHub() {
             className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--border)]/60 px-3 py-1.5 text-[12.5px] font-medium text-[var(--muted-foreground)] transition-colors hover:border-[var(--border)] hover:text-[var(--foreground)]"
           >
             <Rocket size={13} />
-            {tr({ zh: "引导", en: "Tour" })}
+            {t("Tour")}
           </button>
         </div>
       </header>
@@ -143,7 +136,7 @@ export default function SettingsHub() {
           <CategoryBlock
             key={category.key}
             category={category}
-            tr={tr}
+            t={t}
             modelStats={category.key === "models" ? modelStats : undefined}
             network={category.key === "network" ? network : undefined}
           />
@@ -155,12 +148,12 @@ export default function SettingsHub() {
 
 function CategoryBlock({
   category,
-  tr,
+  t,
   modelStats,
   network,
 }: {
   category: SettingsCategory;
-  tr: (l: Lang) => string;
+  t: (key: string, options?: Record<string, unknown>) => string;
   modelStats?: {
     total: number;
     configured: number;
@@ -186,7 +179,7 @@ function CategoryBlock({
             className="text-[var(--muted-foreground)] transition-colors group-hover:text-[var(--foreground)]"
           />
           <h3 className="text-[15.5px] font-medium tracking-tight text-[var(--foreground)]">
-            {tr(category.label)}
+            {t(category.label)}
           </h3>
         </div>
         <ChevronRight
@@ -197,12 +190,12 @@ function CategoryBlock({
 
       <div className="mt-4">
         {modelStats ? (
-          <ModelPreview stats={modelStats} blurb={tr(category.blurb)} tr={tr} />
+          <ModelPreview stats={modelStats} blurb={t(category.blurb)} t={t} />
         ) : network !== undefined && network !== null ? (
-          <NetworkPreviewRow network={network} tr={tr} />
+          <NetworkPreviewRow network={network} t={t} />
         ) : (
           <p className="text-[12.5px] leading-relaxed text-[var(--muted-foreground)]">
-            {tr(category.blurb)}
+            {t(category.blurb)}
           </p>
         )}
       </div>
@@ -213,7 +206,7 @@ function CategoryBlock({
 function ModelPreview({
   stats,
   blurb,
-  tr,
+  t,
 }: {
   stats: {
     total: number;
@@ -223,7 +216,7 @@ function ModelPreview({
     states: ServiceReadiness[];
   };
   blurb: string;
-  tr: (l: Lang) => string;
+  t: (key: string, options?: Record<string, unknown>) => string;
 }) {
   // Restricted deployments (no editable catalog) can't know — show the blurb.
   if (stats.configured < 0) {
@@ -253,18 +246,20 @@ function ModelPreview({
       </div>
       <span className="text-[12px] tabular-nums text-[var(--muted-foreground)]">
         {stats.failed > 0
-          ? tr({
-              zh: `${stats.configured}/${stats.total} 已配置 · ${stats.failed} 个失败`,
-              en: `${stats.configured}/${stats.total} configured · ${stats.failed} failed`,
+          ? t("{{configured}}/{{total}} configured · {{failed}} failed", {
+              configured: stats.configured,
+              total: stats.total,
+              failed: stats.failed,
             })
           : stats.passed > 0
-            ? tr({
-                zh: `${stats.configured}/${stats.total} 已配置 · ${stats.passed} 个通过`,
-                en: `${stats.configured}/${stats.total} configured · ${stats.passed} passed`,
+            ? t("{{configured}}/{{total}} configured · {{passed}} passed", {
+                configured: stats.configured,
+                total: stats.total,
+                passed: stats.passed,
               })
-            : tr({
-                zh: `${stats.configured}/${stats.total} 已配置`,
-                en: `${stats.configured}/${stats.total} configured`,
+            : t("{{configured}}/{{total}} configured", {
+                configured: stats.configured,
+                total: stats.total,
               })}
       </span>
     </div>
@@ -273,21 +268,21 @@ function ModelPreview({
 
 function NetworkPreviewRow({
   network,
-  tr,
+  t,
 }: {
   network: NetworkPreview;
-  tr: (l: Lang) => string;
+  t: (key: string, options?: Record<string, unknown>) => string;
 }) {
   return (
     <div className="flex items-center gap-2 text-[12px] text-[var(--muted-foreground)]">
       <span className="shrink-0 text-[var(--muted-foreground)]/70">
-        {tr({ zh: "API", en: "API" })}
+        {t("API")}
       </span>
       <span
         className="truncate font-mono text-[11.5px] text-[var(--foreground)]"
         title={network.apiBase}
       >
-        {network.apiBase || tr({ zh: "本地", en: "local" })}
+        {network.apiBase || t("local")}
       </span>
     </div>
   );

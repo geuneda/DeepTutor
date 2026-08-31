@@ -1431,7 +1431,7 @@ export default function EngineDetail({
               <StatusBadge status={status} />
             </div>
             <p className="mt-1 text-[12.5px] leading-relaxed text-[var(--muted-foreground)]">
-              {provider.description}
+              {t(provider.description)}
             </p>
           </div>
         </div>

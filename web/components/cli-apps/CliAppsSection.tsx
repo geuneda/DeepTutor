@@ -22,6 +22,8 @@ import BrandIcon, { TrademarkNote } from "@/components/common/BrandIcon";
 import SpaceSectionHeader from "@/components/space/SpaceSectionHeader";
 import { chipClass } from "@/components/mcp/styles";
 import { useAuthStatus } from "@/hooks/useAuthStatus";
+import { normalizeLanguage } from "@/context/app-shell-storage";
+import { getLocale, type Language } from "@/lib/datetime";
 import {
   CliAppError,
   type CliApp,
@@ -50,7 +52,7 @@ type Tab = "installed" | "store";
  */
 export default function CliAppsSection() {
   const { t, i18n } = useTranslation();
-  const zh = i18n.language?.toLowerCase().startsWith("zh");
+  const language = normalizeLanguage(i18n.language);
   const { isAdmin, loading: authLoading } = useAuthStatus();
 
   const [state, setState] = useState<CliAppState | null>(null);
@@ -130,7 +132,7 @@ export default function CliAppsSection() {
         <Installed
           state={state}
           isAdmin={isAdmin}
-          zh={zh}
+          language={language}
           onChanged={setState}
           onBrowse={() => setTab("store")}
         />
@@ -144,13 +146,13 @@ export default function CliAppsSection() {
 function Installed({
   state,
   isAdmin,
-  zh,
+  language,
   onChanged,
   onBrowse,
 }: {
   state: CliAppState | null;
   isAdmin: boolean;
-  zh: boolean;
+  language: Language;
   onChanged: (next: CliAppState) => void;
   onBrowse: () => void;
 }) {
@@ -246,7 +248,7 @@ function Installed({
                 <p className="mt-1.5 text-[11px] text-[var(--muted-foreground)]/80">
                   {app.installed_at
                     ? t("Installed {{when}}", {
-                        when: formatDay(app.installed_at, zh),
+                        when: formatDay(app.installed_at, language),
                       })
                     : ""}
                   {app.pin ? ` · ${app.pin.slice(0, 12)}` : ""}
@@ -1012,10 +1014,10 @@ function messageOf(error: unknown): string {
   return "";
 }
 
-function formatDay(iso: string, zh: boolean): string {
+function formatDay(iso: string, language: Language): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleDateString(zh ? "zh-CN" : "en-US", {
+  return date.toLocaleDateString(getLocale(language), {
     year: "numeric",
     month: "short",
     day: "numeric",

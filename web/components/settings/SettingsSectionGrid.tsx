@@ -12,7 +12,6 @@ import {
 } from "@/components/settings/SettingsContext";
 import {
   SETTINGS_CATEGORIES,
-  type Lang,
   type SettingsLeaf,
 } from "@/lib/settings-nav";
 
@@ -27,9 +26,7 @@ export default function SettingsSectionGrid({
 }: {
   categoryKey: string;
 }) {
-  const { i18n } = useTranslation();
-  const zh = i18n.language?.toLowerCase().startsWith("zh");
-  const tr = useCallback((l: Lang) => (zh ? l.zh : l.en), [zh]);
+  const { t } = useTranslation();
 
   const { catalog, catalogEditable, diagnosticsResults } = useSettings();
 
@@ -50,7 +47,7 @@ export default function SettingsSectionGrid({
   const chipFor = useCallback(
     (
       leaf: SettingsLeaf,
-    ): { label: Lang; tone: "ok" | "bad" | "neutral"; dot: boolean } | null => {
+    ): { label: string; tone: "ok" | "bad" | "neutral"; dot: boolean } | null => {
       if (!leaf.service) return null;
       if (catalogEditable !== true) return null;
       const readiness = serviceReadiness(
@@ -62,27 +59,27 @@ export default function SettingsSectionGrid({
         return {
           tone: "bad",
           dot: true,
-          label: { zh: "测试失败", en: "Test failed" },
+          label: "Test failed",
         };
       }
       if (readiness === "passed") {
         return {
           tone: "ok",
           dot: true,
-          label: { zh: "测试通过", en: "Test passed" },
+          label: "Test passed",
         };
       }
       if (readiness === "untested") {
         return {
           tone: "neutral",
           dot: true,
-          label: { zh: "已配置", en: "Configured" },
+          label: "Configured",
         };
       }
       return {
         tone: "neutral",
         dot: false,
-        label: { zh: "未配置", en: "Not set" },
+        label: "Not set",
       };
     },
     [catalog, catalogEditable, diagnosticsResults],
@@ -98,16 +95,16 @@ export default function SettingsSectionGrid({
     <div>
       <header className="mb-6">
         <h1 className="font-serif text-[22px] font-semibold tracking-tight text-[var(--foreground)]">
-          {tr(category.label)}
+          {t(category.label)}
         </h1>
         <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--muted-foreground)]">
-          {tr(category.blurb)}
+          {t(category.blurb)}
         </p>
       </header>
 
       <div className="grid gap-3 sm:grid-cols-2">
         {leaves.map((leaf) => (
-          <LeafCard key={leaf.key} leaf={leaf} chip={chipFor(leaf)} tr={tr} />
+          <LeafCard key={leaf.key} leaf={leaf} chip={chipFor(leaf)} t={t} />
         ))}
       </div>
     </div>
@@ -117,11 +114,11 @@ export default function SettingsSectionGrid({
 function LeafCard({
   leaf,
   chip,
-  tr,
+  t,
 }: {
   leaf: SettingsLeaf;
-  chip: { label: Lang; tone: "ok" | "bad" | "neutral"; dot: boolean } | null;
-  tr: (l: Lang) => string;
+  chip: { label: string; tone: "ok" | "bad" | "neutral"; dot: boolean } | null;
+  t: (key: string) => string;
 }) {
   const Icon = leaf.icon;
   const tone = chip?.tone ?? "neutral";
@@ -140,7 +137,7 @@ function LeafCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h3 className="truncate text-[14.5px] font-medium leading-tight tracking-tight text-[var(--foreground)]">
-              {tr(leaf.label)}
+              {t(leaf.label)}
             </h3>
             {chip && (
               <span
@@ -167,7 +164,7 @@ function LeafCard({
                     }`}
                   />
                 )}
-                {tr(chip.label)}
+                {t(chip.label)}
               </span>
             )}
           </div>
@@ -178,7 +175,7 @@ function LeafCard({
         />
       </div>
       <p className="mt-3 text-[12.5px] leading-relaxed text-[var(--muted-foreground)]">
-        {tr(leaf.blurb)}
+        {t(leaf.blurb)}
       </p>
     </Link>
   );

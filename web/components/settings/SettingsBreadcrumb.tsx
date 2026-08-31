@@ -6,16 +6,14 @@ import { usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { breadcrumbFor, type Lang } from "@/lib/settings-nav";
+import { breadcrumbFor } from "@/lib/settings-nav";
 
 // Top-left location trail, e.g. 设置 / 模型 / LLM. Earlier crumbs are links;
 // the current page is plain text. Replaces the old single "back" link so the
 // user always knows where they are inside Settings and can jump up a level.
 export default function SettingsBreadcrumb() {
   const pathname = usePathname() ?? "";
-  const { t, i18n } = useTranslation();
-  const zh = i18n.language?.toLowerCase().startsWith("zh");
-  const tr = (l: Lang) => (zh ? l.zh : l.en);
+  const { t } = useTranslation();
 
   const crumbs = breadcrumbFor(pathname);
 
@@ -27,7 +25,7 @@ export default function SettingsBreadcrumb() {
       {crumbs.map((crumb, i) => {
         const last = i === crumbs.length - 1;
         return (
-          <Fragment key={`${crumb.label.en}-${i}`}>
+          <Fragment key={`${crumb.label}-${i}`}>
             {i > 0 && (
               <ChevronRight
                 size={13}
@@ -40,7 +38,7 @@ export default function SettingsBreadcrumb() {
                 href={crumb.href}
                 className="rounded px-0.5 transition-colors hover:text-[var(--foreground)]"
               >
-                {tr(crumb.label)}
+                {t(crumb.label)}
               </Link>
             ) : (
               <span
@@ -50,7 +48,7 @@ export default function SettingsBreadcrumb() {
                     : "px-0.5"
                 }
               >
-                {tr(crumb.label)}
+                {t(crumb.label)}
               </span>
             )}
           </Fragment>

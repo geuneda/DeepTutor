@@ -125,9 +125,16 @@ class SettingSpec:
 # interface.json rows (personal scope)
 # --------------------------------------------------------------------------
 
-_LANGUAGE_CHOICES: tuple[tuple[str, str, str], ...] = (
-    ("en", "English", "Interface and replies in English."),
-    ("zh", "简体中文", "Interface and replies in Simplified Chinese."),
+_INTERFACE_LANGUAGE_CHOICES: tuple[tuple[str, str, str], ...] = (
+    ("en", "English", "Interface in English."),
+    ("zh", "简体中文", "Interface in Simplified Chinese."),
+    ("ko", "한국어", "Interface in Korean."),
+)
+
+_RESPONSE_LANGUAGE_CHOICES: tuple[tuple[str, str, str], ...] = (
+    ("en", "English", "Replies in English."),
+    ("zh", "简体中文", "Replies in Simplified Chinese."),
+    ("ko", "한국어", "Replies in Korean."),
 )
 
 _THEME_CHOICES: tuple[tuple[str, str, str], ...] = (
@@ -184,7 +191,7 @@ def _interface_specs() -> list[SettingSpec]:
             label="Interface language",
             summary="Language of the DeepTutor UI (menus, buttons, settings).",
             read=language_read,
-            choices=_static_choices(_LANGUAGE_CHOICES, language_read),
+            choices=_static_choices(_INTERFACE_LANGUAGE_CHOICES, language_read),
             write=_write_ui("language"),
         ),
         SettingSpec(
@@ -195,7 +202,7 @@ def _interface_specs() -> list[SettingSpec]:
             label="Reply language",
             summary="Language the assistant writes its answers in.",
             read=response_read,
-            choices=_static_choices(_LANGUAGE_CHOICES, response_read),
+            choices=_static_choices(_RESPONSE_LANGUAGE_CHOICES, response_read),
             write=_write_ui("response_language"),
             effect_detail="Applies from the next turn onwards.",
         ),

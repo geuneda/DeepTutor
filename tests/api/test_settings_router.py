@@ -66,11 +66,26 @@ async def test_ui_languages_are_persisted_independently(
     monkeypatch.setattr(settings_router, "_settings_file", lambda: settings_file)
 
     response = await settings_router.update_ui_settings(
-        settings_router.UISettingsUpdate(theme="snow", language="en", response_language="zh")
+        settings_router.UISettingsUpdate(theme="snow", language="en", response_language="ko")
     )
 
     assert response["language"] == "en"
-    assert response["response_language"] == "zh"
+    assert response["response_language"] == "ko"
+
+
+@pytest.mark.asyncio
+async def test_korean_is_accepted_for_both_ui_languages(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    settings_file = tmp_path / "interface.json"
+    monkeypatch.setattr(settings_router, "_settings_file", lambda: settings_file)
+
+    response = await settings_router.update_ui_settings(
+        settings_router.UISettingsUpdate(language="ko", response_language="ko")
+    )
+
+    assert response["language"] == "ko"
+    assert response["response_language"] == "ko"
 
 
 class _FakeEmbeddingAdapter:

@@ -12,6 +12,8 @@ import {
   inputClass,
 } from "@/components/settings/shared";
 import { Toggle } from "@/components/settings/Toggle";
+import { normalizeLanguage } from "@/context/app-shell-storage";
+import { getLocale, type Language } from "@/lib/datetime";
 import { agentGlyph } from "@/components/agents/agent-icons";
 import {
   getBackendOptions,
@@ -21,8 +23,6 @@ import {
   type SubagentBackendConfig,
   type SubagentBackendOptions,
 } from "@/lib/subagents-api";
-
-type Lang = { zh: string; en: string };
 
 /** The CLI default sentinel — empty model/effort means "let the CLI decide". */
 const CUSTOM = "__custom__";
@@ -157,111 +157,83 @@ const DISPLAY_NAMES: Record<string, string> = {
 
 // Per-kind flavor for the system-prompt section: how the instruction reaches
 // the agent (a real flag, a native prompt field, or a first-message prefix).
-const SYSTEM_PROMPT_HINT: Record<string, Lang> = {
-  claude_code: {
-    zh: "追加到该智能体的系统提示（--append-system-prompt）。",
-    en: "Appended to the agent's system prompt (--append-system-prompt).",
-  },
-  gemini: {
-    zh: "Gemini CLI 没有系统提示 flag——该指令会前缀在每个新会话的第一条消息上。",
-    en: "Gemini CLI has no system-prompt flag — the instruction is prefixed to each new session's first message.",
-  },
-  kimi: {
-    zh: "Kimi CLI 没有系统提示 flag——该指令会前缀在每个新会话的第一条消息上。",
-    en: "Kimi CLI has no system-prompt flag — the instruction is prefixed to each new session's first message.",
-  },
-  opencode: {
-    zh: "通过服务器 API 的 system 字段注入到每个新会话。",
-    en: "Injected into each new session via the server API's system field.",
-  },
-  mimo: {
-    zh: "通过服务器 API 的 system 字段注入到每个新会话。",
-    en: "Injected into each new session via the server API's system field.",
-  },
+const SYSTEM_PROMPT_HINT: Record<string, string> = {
+  claude_code: "Appended to the agent's system prompt (--append-system-prompt).",
+  gemini: "Gemini CLI has no system-prompt flag — the instruction is prefixed to each new session's first message.",
+  kimi: "Kimi CLI has no system-prompt flag — the instruction is prefixed to each new session's first message.",
+  opencode: "Injected into each new session via the server API's system field.",
+  mimo: "Injected into each new session via the server API's system field.",
 };
 
-const PERMISSION_MODES: { value: string; label: Lang }[] = [
+const PERMISSION_MODES: { value: string; label: string }[] = [
   {
     value: "bypassPermissions",
-    label: {
-      zh: "绕过权限 · 全自主（推荐）",
-      en: "Bypass permissions · autonomous (recommended)",
-    },
+    label: "Bypass permissions · autonomous (recommended)",
   },
   {
     value: "acceptEdits",
-    label: { zh: "自动接受编辑", en: "Accept edits automatically" },
+    label: "Accept edits automatically",
   },
   {
     value: "default",
-    label: { zh: "默认 · 可能等待确认", en: "Default · may wait for prompts" },
+    label: "Default · may wait for prompts",
   },
   {
     value: "plan",
-    label: { zh: "计划模式 · 只读", en: "Plan mode · read-only" },
+    label: "Plan mode · read-only",
   },
 ];
 
-const SANDBOXES: { value: string; label: Lang }[] = [
-  { value: "read-only", label: { zh: "只读", en: "Read-only" } },
+const SANDBOXES: { value: string; label: string }[] = [
+  { value: "read-only", label: "Read-only" },
   {
     value: "workspace-write",
-    label: { zh: "工作目录可写（推荐）", en: "Workspace write (recommended)" },
+    label: "Workspace write (recommended)",
   },
-  { value: "danger-full-access", label: { zh: "完全访问", en: "Full access" } },
+  { value: "danger-full-access", label: "Full access" },
   {
     value: "bypass",
-    label: { zh: "绕过沙箱与审批", en: "Bypass sandbox & approvals" },
+    label: "Bypass sandbox & approvals",
   },
 ];
 
-const APPROVALS: { value: string; label: Lang }[] = [
+const APPROVALS: { value: string; label: string }[] = [
   {
     value: "never",
-    label: { zh: "从不询问（推荐）", en: "Never ask (recommended)" },
+    label: "Never ask (recommended)",
   },
-  { value: "on-failure", label: { zh: "失败时询问", en: "On failure" } },
-  { value: "on-request", label: { zh: "按需询问", en: "On request" } },
+  { value: "on-failure", label: "On failure" },
+  { value: "on-request", label: "On request" },
   {
     value: "untrusted",
-    label: { zh: "不可信命令时询问", en: "Untrusted commands" },
+    label: "Untrusted commands",
   },
 ];
 
 // Gemini stores the same canonical permission values (the two CLIs' modes are
 // semantically parallel); the labels name its native --approval-mode spellings.
-const GEMINI_PERMISSION_MODES: { value: string; label: Lang }[] = [
+const GEMINI_PERMISSION_MODES: { value: string; label: string }[] = [
   {
     value: "bypassPermissions",
-    label: {
-      zh: "YOLO · 全自主（推荐）",
-      en: "YOLO · autonomous (recommended)",
-    },
+    label: "YOLO · autonomous (recommended)",
   },
   {
     value: "acceptEdits",
-    label: {
-      zh: "自动接受编辑（auto_edit）",
-      en: "Auto-accept edits (auto_edit)",
-    },
+    label: "Auto-accept edits (auto_edit)",
   },
   {
     value: "default",
-    label: {
-      zh: "默认 · 无人值守下改动会被拒绝",
-      en: "Default · mutating tools are denied headless",
-    },
+    label: "Default · mutating tools are denied headless",
   },
   {
     value: "plan",
-    label: { zh: "计划模式 · 只读", en: "Plan mode · read-only" },
+    label: "Plan mode · read-only",
   },
 ];
 
 export function SubagentSettingsEditor({ kind }: { kind: string }) {
-  const { i18n } = useTranslation();
-  const zh = i18n.language?.toLowerCase().startsWith("zh");
-  const tr = useCallback((l: Lang) => (zh ? l.zh : l.en), [zh]);
+  const { t, i18n } = useTranslation();
+  const language = normalizeLanguage(i18n.language);
 
   const [options, setOptions] = useState<SubagentBackendOptions | null>(null);
   const [config, setConfig] = useState<SubagentBackendConfig>({ ...DEFAULTS });
@@ -378,16 +350,16 @@ export function SubagentSettingsEditor({ kind }: { kind: string }) {
     <div>
       <SettingsPageHeader
         title={displayName}
-        description={tr({
-          zh: `DeepTutor 通过 consult_subagent 调用本机 ${displayName} 时使用的模型、推理强度与运行参数。设置后即覆盖 CLI 的默认值；留空表示沿用 CLI 默认。`,
-          en: `Model, reasoning effort, and run parameters DeepTutor drives the local ${displayName} with when consulting it. These override the CLI defaults; leave blank to keep the CLI's own default.`,
-        })}
+        description={t(
+          "Model, reasoning effort, and run parameters DeepTutor drives the local {{name}} with when consulting it. These override the CLI defaults; leave blank to keep the CLI's own default.",
+          { name: displayName },
+        )}
       />
 
       {loading && (
         <div className="flex items-center gap-2 text-[13px] text-[var(--muted-foreground)]">
           <Loader2 className="h-4 w-4 animate-spin" />
-          {tr({ zh: "加载中…", en: "Loading…" })}
+          {t("Loading…")}
         </div>
       )}
 
@@ -402,22 +374,16 @@ export function SubagentSettingsEditor({ kind }: { kind: string }) {
           {/* Availability + sync. The model/effort lists change over time, so
               the user can re-pull them on demand. */}
           <SettingSection
-            title={tr({ zh: "连接与同步", en: "Connection & sync" })}
-            description={tr({
-              zh: "供应商会不定期增删模型与推理档位——随时点同步即可重新拉取最新列表。",
-              en: "Vendors add and retire models and effort levels over time — sync any time to re-pull the latest lists.",
-            })}
+            title={t("Connection & sync")}
+            description={t("Vendors add and retire models and effort levels over time — sync any time to re-pull the latest lists.")}
           >
             <SettingRow
-              title={tr({ zh: "本机状态", en: "On this machine" })}
+              title={t("On this machine")}
               description={
                 options.available
                   ? options.version
                   : options.detail ||
-                    tr({
-                      zh: "未在 PATH 上找到该 CLI。",
-                      en: "CLI not found on PATH.",
-                    })
+                    t("CLI not found on PATH.")
               }
               control={
                 <span
@@ -434,23 +400,19 @@ export function SubagentSettingsEditor({ kind }: { kind: string }) {
                     <XCircle className="h-3.5 w-3.5" />
                   )}
                   {options.available
-                    ? tr({ zh: "已安装", en: "Installed" })
-                    : tr({ zh: "未检测到", en: "Not detected" })}
+                    ? t("Installed")
+                    : t("Not detected")}
                 </span>
               }
             />
             <SettingRow
-              title={tr({ zh: "模型列表", en: "Model list" })}
+              title={t("Model list")}
               description={
                 options.synced_at
-                  ? tr({
-                      zh: `上次同步：${formatTs(options.synced_at, zh)}`,
-                      en: `Last synced: ${formatTs(options.synced_at, zh)}`,
+                  ? t("Last synced: {{time}}", {
+                      time: formatTs(options.synced_at, language),
                     })
-                  : tr({
-                      zh: "该 CLI 无可枚举的模型接口，下方为常用别名，可自定义任意模型名。",
-                      en: "This CLI has no model-list API; below are the common aliases, and any model name is accepted.",
-                    })
+                  : t("This CLI has no model-list API; below are the common aliases, and any model name is accepted.")
               }
               control={
                 <button
@@ -462,25 +424,19 @@ export function SubagentSettingsEditor({ kind }: { kind: string }) {
                   <RefreshCw
                     className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`}
                   />
-                  {tr({ zh: "同步", en: "Sync" })}
+                  {t("Sync")}
                 </button>
               }
             />
           </SettingSection>
 
           <SettingSection
-            title={tr({ zh: "模型", en: "Model" })}
-            description={tr({
-              zh: "DeepTutor 调用该智能体时使用的模型与推理强度。",
-              en: "The model and reasoning effort DeepTutor consults this agent with.",
-            })}
+            title={t("Model")}
+            description={t("The model and reasoning effort DeepTutor consults this agent with.")}
           >
             <SettingRow
-              title={tr({ zh: "启用", en: "Enabled" })}
-              description={tr({
-                zh: "关闭后，DeepTutor 不会在对话中调用该智能体。",
-                en: "When off, DeepTutor won't consult this agent in chat.",
-              })}
+              title={t("Enabled")}
+              description={t("When off, DeepTutor won't consult this agent in chat.")}
               control={
                 <Toggle
                   checked={config.enabled !== false}
@@ -490,7 +446,7 @@ export function SubagentSettingsEditor({ kind }: { kind: string }) {
               }
             />
             <SettingRow
-              title={tr({ zh: "模型", en: "Model" })}
+              title={t("Model")}
               control={
                 <div className="flex w-[260px] flex-col items-end gap-2">
                   <select
@@ -500,7 +456,7 @@ export function SubagentSettingsEditor({ kind }: { kind: string }) {
                     onChange={(e) => onModelSelect(e.target.value)}
                   >
                     <option value="">
-                      {tr({ zh: "CLI 默认", en: "CLI default" })}
+                      {t("CLI default")}
                     </option>
                     {options.models.map((m) => (
                       <option key={m.slug} value={m.slug}>
@@ -509,7 +465,7 @@ export function SubagentSettingsEditor({ kind }: { kind: string }) {
                     ))}
                     {options.allow_custom_model && (
                       <option value={CUSTOM}>
-                        {tr({ zh: "自定义…", en: "Custom…" })}
+                        {t("Custom…")}
                       </option>
                     )}
                   </select>
@@ -517,10 +473,7 @@ export function SubagentSettingsEditor({ kind }: { kind: string }) {
                     <input
                       className={inputClass}
                       disabled={busy}
-                      placeholder={tr({
-                        zh: "输入模型名",
-                        en: "Enter a model name",
-                      })}
+                      placeholder={t("Enter a model name")}
                       value={config.model ?? ""}
                       onChange={(e) =>
                         setConfig((p) => ({ ...p, model: e.target.value }))
@@ -535,7 +488,7 @@ export function SubagentSettingsEditor({ kind }: { kind: string }) {
             />
             {features.effort && (
               <SettingRow
-                title={tr({ zh: "推理强度", en: "Reasoning effort" })}
+                title={t("Reasoning effort")}
                 control={
                   <select
                     className={`${selectClass} w-[260px]`}
@@ -544,7 +497,7 @@ export function SubagentSettingsEditor({ kind }: { kind: string }) {
                     onChange={(e) => void save({ effort: e.target.value })}
                   >
                     <option value="">
-                      {tr({ zh: "CLI 默认", en: "CLI default" })}
+                      {t("CLI default")}
                     </option>
                     {effortChoices.map((eff) => (
                       <option key={eff} value={eff}>
@@ -559,22 +512,16 @@ export function SubagentSettingsEditor({ kind }: { kind: string }) {
 
           {features.systemPrompt && (
             <SettingSection
-              title={tr({ zh: "系统提示", en: "System prompt" })}
-              description={`${tr(
+              title={t("System prompt")}
+              description={`${t(
                 SYSTEM_PROMPT_HINT[kind] ?? SYSTEM_PROMPT_HINT.claude_code,
-              )} ${tr({
-                zh: "留空则使用 DeepTutor 的默认委派提示。",
-                en: "Blank uses DeepTutor's default delegate instruction.",
-              })}`}
+              )} ${t("Blank uses DeepTutor's default delegate instruction.")}`}
             >
               <div className="py-4">
                 <textarea
                   className={`${inputClass} min-h-[96px] resize-y leading-relaxed`}
                   disabled={busy}
-                  placeholder={tr({
-                    zh: "（留空使用默认委派提示）",
-                    en: "(blank uses the default delegate instruction)",
-                  })}
+                  placeholder={t("(blank uses the default delegate instruction)")}
                   value={config.system_prompt ?? ""}
                   onChange={(e) =>
                     setConfig((p) => ({ ...p, system_prompt: e.target.value }))
@@ -586,19 +533,13 @@ export function SubagentSettingsEditor({ kind }: { kind: string }) {
           )}
 
           <SettingSection
-            title={tr({ zh: "运行参数", en: "Run parameters" })}
-            description={tr({
-              zh: "DeepTutor 无人值守地驱动该智能体——默认值确保它不会卡在等待确认上。",
-              en: "DeepTutor drives the agent unattended — the defaults ensure it never stalls waiting for an approval prompt.",
-            })}
+            title={t("Run parameters")}
+            description={t("DeepTutor drives the agent unattended — the defaults ensure it never stalls waiting for an approval prompt.")}
           >
             {features.permissionMode && (
               <SettingRow
-                title={tr({ zh: "权限模式", en: "Permission mode" })}
-                description={tr({
-                  zh: "非「绕过权限」的模式可能让无人值守的运行卡住等待确认。",
-                  en: "Modes other than bypass may stall an unattended run waiting for a prompt.",
-                })}
+                title={t("Permission mode")}
+                description={t("Modes other than bypass may stall an unattended run waiting for a prompt.")}
                 control={
                   <select
                     className={`${selectClass} w-[260px]`}
@@ -613,7 +554,7 @@ export function SubagentSettingsEditor({ kind }: { kind: string }) {
                       : PERMISSION_MODES
                     ).map((o) => (
                       <option key={o.value} value={o.value}>
-                        {tr(o.label)}
+                        {t(o.label)}
                       </option>
                     ))}
                   </select>
@@ -623,11 +564,8 @@ export function SubagentSettingsEditor({ kind }: { kind: string }) {
 
             {features.autoApprove && (
               <SettingRow
-                title={tr({ zh: "自动批准", en: "Auto-approve" })}
-                description={tr({
-                  zh: "自动批准该智能体的权限请求。关闭后请求将被拒绝——无人值守运行无法交互确认。",
-                  en: "Approve the agent's permission asks automatically. When off they are rejected — an unattended run can't confirm interactively.",
-                })}
+                title={t("Auto-approve")}
+                description={t("Approve the agent's permission asks automatically. When off they are rejected — an unattended run can't confirm interactively.")}
                 control={
                   <Toggle
                     checked={config.auto_approve !== false}
@@ -640,11 +578,8 @@ export function SubagentSettingsEditor({ kind }: { kind: string }) {
 
             {features.thinking && (
               <SettingRow
-                title={tr({ zh: "思考过程", en: "Thinking" })}
-                description={tr({
-                  zh: "流式展示模型的思考过程（--thinking）。",
-                  en: "Stream the model's thinking (--thinking).",
-                })}
+                title={t("Thinking")}
+                description={t("Stream the model's thinking (--thinking).")}
                 control={
                   <Toggle
                     checked={config.thinking !== false}
@@ -658,7 +593,7 @@ export function SubagentSettingsEditor({ kind }: { kind: string }) {
             {features.codexSandbox && (
               <>
                 <SettingRow
-                  title={tr({ zh: "沙箱", en: "Sandbox" })}
+                  title={t("Sandbox")}
                   control={
                     <select
                       className={`${selectClass} w-[260px]`}
@@ -668,18 +603,15 @@ export function SubagentSettingsEditor({ kind }: { kind: string }) {
                     >
                       {SANDBOXES.map((o) => (
                         <option key={o.value} value={o.value}>
-                          {tr(o.label)}
+                          {t(o.label)}
                         </option>
                       ))}
                     </select>
                   }
                 />
                 <SettingRow
-                  title={tr({ zh: "审批策略", en: "Approval policy" })}
-                  description={tr({
-                    zh: "非「从不询问」可能让无人值守的运行卡住。",
-                    en: "Anything but never may stall an unattended run.",
-                  })}
+                  title={t("Approval policy")}
+                  description={t("Anything but never may stall an unattended run.")}
                   control={
                     <select
                       className={`${selectClass} w-[260px]`}
@@ -689,18 +621,15 @@ export function SubagentSettingsEditor({ kind }: { kind: string }) {
                     >
                       {APPROVALS.map((o) => (
                         <option key={o.value} value={o.value}>
-                          {tr(o.label)}
+                          {t(o.label)}
                         </option>
                       ))}
                     </select>
                   }
                 />
                 <SettingRow
-                  title={tr({ zh: "命令联网", en: "Command network access" })}
-                  description={tr({
-                    zh: "允许模型运行的 shell 命令访问网络（工作目录可写模式默认离线）。内置 web search 不受影响。",
-                    en: "Let the model's shell commands reach the network (workspace-write is offline by default). The built-in web search is unaffected.",
-                  })}
+                  title={t("Command network access")}
+                  description={t("Let the model's shell commands reach the network (workspace-write is offline by default). The built-in web search is unaffected.")}
                   control={
                     <Toggle
                       checked={Boolean(config.network_access)}
@@ -710,11 +639,8 @@ export function SubagentSettingsEditor({ kind }: { kind: string }) {
                   }
                 />
                 <SettingRow
-                  title={tr({ zh: "临时会话", en: "Ephemeral session" })}
-                  description={tr({
-                    zh: "不在 ~/.codex/sessions 下持久化本次会话。",
-                    en: "Don't persist the session under ~/.codex/sessions.",
-                  })}
+                  title={t("Ephemeral session")}
+                  description={t("Don't persist the session under ~/.codex/sessions.")}
                   control={
                     <Toggle
                       checked={Boolean(config.ephemeral)}
@@ -728,11 +654,8 @@ export function SubagentSettingsEditor({ kind }: { kind: string }) {
 
             {features.forwardImages && (
               <SettingRow
-                title={tr({ zh: "转发图片", en: "Forward images" })}
-                description={tr({
-                  zh: "允许 DeepTutor 把本轮对话中的图片附件转发给该智能体。",
-                  en: "Let DeepTutor forward image attachments from the chat turn to this agent.",
-                })}
+                title={t("Forward images")}
+                description={t("Let DeepTutor forward image attachments from the chat turn to this agent.")}
                 control={
                   <Toggle
                     checked={Boolean(config.forward_images)}
@@ -749,10 +672,10 @@ export function SubagentSettingsEditor({ kind }: { kind: string }) {
   );
 }
 
-function formatTs(value: string, zh: boolean): string {
+function formatTs(value: string, language: Language): string {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleString(zh ? "zh-CN" : "en-US", {
+  return parsed.toLocaleString(getLocale(language), {
     dateStyle: "medium",
     timeStyle: "short",
   });

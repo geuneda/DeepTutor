@@ -18,6 +18,10 @@ _GUIDELINE_HEADER = {
         "and the evidence gathered so far. Consider all available options:"
     ),
     "zh": ("**根据当前子目标和已收集的证据，自主决定使用哪个工具**。请综合考虑所有可用选项："),
+    "ko": (
+        "**현재 하위 목표와 지금까지 모은 근거를 바탕으로 어떤 도구를 쓸지 스스로 판단하라.** "
+        "사용할 수 있는 선택지를 모두 검토하라:"
+    ),
 }
 
 _PHASE_LABELS = {
@@ -35,6 +39,19 @@ _PHASE_LABELS = {
         "verification": "阶段 4：验证核查",
         "other": "其他工具",
     },
+    "ko": {
+        "exploration": "1단계: 탐색",
+        "expansion": "2단계: 확장",
+        "synthesis": "3단계: 종합",
+        "verification": "4단계: 검증",
+        "other": "기타 도구",
+    },
+}
+
+_USAGE_LABELS = {
+    "en": {"when": "When to use", "input": "Input"},
+    "zh": {"when": "适用场景", "input": "参数格式"},
+    "ko": {"when": "사용 시점", "input": "입력 형식"},
 }
 
 _PHASE_ORDER = ["exploration", "expansion", "synthesis", "verification", "other"]
@@ -44,6 +61,8 @@ def _normalize_language(language: str) -> str:
     normalized = language.lower()
     if normalized.startswith("zh"):
         return "zh"
+    if normalized.startswith("ko"):
+        return "ko"
     if normalized.startswith("en"):
         return "en"
     return normalized
@@ -107,8 +126,8 @@ class ToolPromptComposer:
         Tools without a ``short_description`` are skipped entirely so the
         block never carries empty bullets.
         """
-        when_label = "When to use" if self.language != "zh" else "适用场景"
-        input_label = "Input" if self.language != "zh" else "参数格式"
+        when_label = _USAGE_LABELS.get(self.language, _USAGE_LABELS["en"])["when"]
+        input_label = _USAGE_LABELS.get(self.language, _USAGE_LABELS["en"])["input"]
         blocks: list[str] = []
         for name, hint in hints:
             if not hint.short_description:

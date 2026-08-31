@@ -4,13 +4,14 @@ Tools API Router
 
 Read-only listing of the chat agent's built-in tools, used by the Settings UI
 to render the "Tools" sub-page. Returns each tool's definition (name,
-description, parameters) alongside its bilingual prompt hints, so the frontend
+description, parameters) alongside its localized prompt hints, so the frontend
 can show authoritative copy without duplicating the catalog.
 """
 
 from __future__ import annotations
 
 import logging
+from dataclasses import replace
 from typing import Any, Literal
 
 from fastapi import APIRouter
@@ -61,9 +62,9 @@ class ToolHintsPayload(BaseModel):
 class BuiltinToolPayload(BaseModel):
     name: str
     description: str
-    description_i18n: dict[Literal["en", "zh"], str] = {}
+    description_i18n: dict[Literal["en", "zh", "ko"], str] = {}
     parameters: list[ToolParameterPayload]
-    hints: dict[Literal["en", "zh"], ToolHintsPayload]
+    hints: dict[Literal["en", "zh", "ko"], ToolHintsPayload]
     aliases: list[str] = []
     # True iff the user is allowed to switch this tool on/off from the
     # /settings/tools UI. Locked-on tools (auto-mounted by the chat
@@ -129,6 +130,28 @@ def _serialise_hints(hints: ToolPromptHints) -> ToolHintsPayload:
     )
 
 
+def _localised_hints(
+    tool: BaseTool,
+    language: str,
+    descriptions: dict[str, str],
+    raw_description: str,
+) -> ToolHintsPayload:
+    """Prompt hints for one locale, with the English echo swapped out.
+
+    A tool that ships no ``hints/<locale>/<name>.yaml`` falls back to the base
+    implementation, which returns its definition text — authored in English —
+    for every locale alike. Showing that inside an otherwise translated
+    settings page reads as a missing translation, so the curated display
+    description takes over whenever we have one. Only this UI payload is
+    touched; the prompt assembly keeps the definition text.
+    """
+    hints = tool.get_prompt_hints(language=language)
+    localised = descriptions.get(language) or ""
+    if localised and hints.short_description == raw_description:
+        hints = replace(hints, short_description=localised)
+    return _serialise_hints(hints)
+
+
 def _collect_aliases_for(tool_name: str) -> list[str]:
     return sorted(alias for alias, (target, _) in TOOL_ALIASES.items() if target == tool_name)
 
@@ -142,6 +165,10 @@ def _build_tool_payload(
 ) -> BuiltinToolPayload:
     name, description, parameters = _serialise_definition(tool.get_definition())
     descriptions = tool_description_i18n(name, description)
+    hints = {
+        lang: _localised_hints(tool, lang, descriptions, description)
+        for lang in ("en", "zh", "ko")
+    }
     toggleable = (not coming_soon) and (name in USER_TOGGLEABLE_TOOL_NAMES)
     if coming_soon:
         enabled = False
@@ -154,10 +181,7 @@ def _build_tool_payload(
         description=descriptions.get("en") or description,
         description_i18n=descriptions,
         parameters=parameters,
-        hints={
-            "en": _serialise_hints(tool.get_prompt_hints(language="en")),
-            "zh": _serialise_hints(tool.get_prompt_hints(language="zh")),
-        },
+        hints=hints,
         aliases=_collect_aliases_for(name),
         toggleable=toggleable,
         enabled=enabled,

@@ -41,6 +41,7 @@ import {
   type QuizJudgeHandle,
 } from "@/lib/quiz-judge";
 import { type QuizQuestion } from "@/lib/quiz-types";
+import { normalizeLanguage } from "@/context/app-shell-storage";
 import CategoryMenu from "@/components/space/question-bank/CategoryMenu";
 import {
   addEntryToCategory,
@@ -632,8 +633,6 @@ export default function QuizViewer({
     }));
     setAnswerViews((prev) => ({ ...prev, [idx]: "judgment" }));
 
-    const judgeLanguage: "zh" | "en" = language === "zh" ? "zh" : "en";
-
     const handle = startQuizJudge(
       {
         question: q.question,
@@ -648,7 +647,7 @@ export default function QuizViewer({
           filename: image.filename,
           mime_type: image.mime,
         })),
-        language: judgeLanguage,
+        language: normalizeLanguage(language),
       },
       {
         onChunk: (chunk) => {

@@ -1,5 +1,7 @@
 "use client";
 
+import { getLocale, type Language } from "@/lib/datetime";
+
 import type { CatalogProfile, ServiceName } from "./SettingsContext";
 
 export const fieldControlClass =
@@ -60,12 +62,12 @@ export function formatContextWindowSource(
 
 export function formatContextWindowUpdatedAt(
   value: string | undefined,
-  language: "en" | "zh",
+  language: Language,
 ): string {
   if (!value) return "";
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleString(language === "zh" ? "zh-CN" : "en-US", {
+  return parsed.toLocaleString(getLocale(language), {
     dateStyle: "medium",
     timeStyle: "short",
   });
@@ -92,12 +94,13 @@ export function activeModelDetail(
 }
 
 // Category-label typography. English looks good with uppercase + wide tracking;
-// CJK glyphs are already square blocks so we drop both and bump size a hair.
+// CJK and Hangul glyphs are already square blocks (and caseless), so we drop
+// both and bump size a hair.
 export function labelClass(
   size: "sm" | "md" | "lg",
-  language: "en" | "zh",
+  language: Language,
 ): string {
-  if (language === "zh") {
+  if (language === "zh" || language === "ko") {
     if (size === "sm") return "text-[10.5px] font-medium";
     if (size === "lg") return "text-[12px] font-medium";
     return "text-[11px] font-medium";

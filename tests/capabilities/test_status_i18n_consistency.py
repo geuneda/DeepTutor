@@ -1,7 +1,7 @@
 """Guards against StatusI18n status-message drift for the visualize capability.
 
 A capability that calls ``i18n.t("some_key", "default", ...)`` must have
-``some_key`` defined in ``agents/<module>/prompts/{en,zh}/<capability>.yaml``
+``some_key`` defined in ``agents/<module>/prompts/<locale>/<capability>.yaml``
 under the ``status:`` section. If it isn't, ``StatusI18n.t`` silently falls back to the
 English ``default`` — so non-English users see English status text while the
 code looks fine. This drift actually happened during the visualize Stage-3
@@ -35,10 +35,18 @@ def _code() -> str:
     return _CODE.read_text(encoding="utf-8")
 
 
-def test_en_zh_status_parity() -> None:
-    """en and zh must define the exact same set of status keys."""
-    en, zh = _status_keys("en"), _status_keys("zh")
-    assert en == zh, f"en/zh status keys differ: en-only={en - zh} zh-only={zh - en}"
+def _translation_locales() -> list[str]:
+    return sorted(d.name for d in _PROMPTS.iterdir() if d.is_dir() and d.name != "en")
+
+
+def test_translated_status_parity() -> None:
+    """Every translated locale must define the exact same set of status keys as en."""
+    en = _status_keys("en")
+    for lang in _translation_locales():
+        other = _status_keys(lang)
+        assert en == other, (
+            f"en/{lang} status keys differ: en-only={en - other} {lang}-only={other - en}"
+        )
 
 
 def test_code_i18n_keys_exist_in_yaml() -> None:

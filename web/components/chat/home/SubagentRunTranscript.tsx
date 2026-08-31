@@ -150,8 +150,7 @@ function SubagentLine({ channel, text }: { channel: string; text: string }) {
 }
 
 function ToolResultBlock({ text }: { text: string }) {
-  const { i18n } = useTranslation();
-  const zh = i18n.language?.toLowerCase().startsWith("zh");
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const lines = text.split("\n");
   const overflow = lines.length > RESULT_PREVIEW_LINES;
@@ -174,13 +173,7 @@ function ToolResultBlock({ text }: { text: string }) {
           onClick={() => setOpen(!open)}
           className="mt-1 text-[11px] text-[var(--muted-foreground)]/80 transition-colors hover:text-[var(--foreground)]"
         >
-          {open
-            ? zh
-              ? "收起"
-              : "collapse"
-            : zh
-              ? `… 展开 +${hidden} 行`
-              : `… +${hidden} lines`}
+          {open ? t("collapse") : t("… +{{count}} lines", { count: hidden })}
         </button>
       )}
     </div>

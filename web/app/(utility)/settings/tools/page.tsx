@@ -5,6 +5,7 @@ import { ChevronDown, Loader2, Lock, Wrench } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { useSettings } from "@/components/settings/SettingsContext";
+import type { AppLanguage } from "@/context/app-shell-storage";
 import { SettingsPageHeader } from "@/components/settings/shared";
 import { apiFetch, apiUrl } from "@/lib/api";
 import { invalidateEnabledOptionalToolsCache } from "@/lib/tools-settings";
@@ -32,7 +33,8 @@ type BuiltinTool = {
   name: string;
   description: string;
   parameters: ToolParameter[];
-  hints: { en: ToolHints; zh: ToolHints };
+  description_i18n: Partial<Record<AppLanguage, string>>;
+  hints: Record<AppLanguage, ToolHints>;
   aliases: string[];
   toggleable: boolean;
   enabled: boolean;
@@ -60,9 +62,9 @@ type ToolSection = {
 
 // Display labels for capability-owned tool sections, keyed by the backend's
 // capability id. Falls back to the raw id for any unmapped capability.
-const CAPABILITY_LABELS: Record<string, { zh: string; en: string }> = {
-  solve: { zh: "深度解题", en: "Deep Solve" },
-  mastery: { zh: "精通路径", en: "Mastery Path" },
+const CAPABILITY_LABELS: Record<string, string> = {
+  solve: "Deep Solve",
+  mastery: "Mastery Path",
 };
 
 export default function ToolsSettingsPage() {
@@ -140,7 +142,6 @@ export default function ToolsSettingsPage() {
 
   const sections = useMemo<ToolSection[] | null>(() => {
     if (!tools) return null;
-    const zh = language === "zh";
     // Buckets: toggleable (体验增强) first, then locked-on built-ins, then one
     // section per capability for its owned tools. Backend order is preserved
     // within each bucket (mirrors USER_TOGGLEABLE_TOOL_NAMES / the
@@ -164,36 +165,36 @@ export default function ToolsSettingsPage() {
     if (experience.length) {
       out.push({
         key: "experience",
-        label: zh ? "体验增强" : "Experience Enhancement",
-        hint: zh
-          ? "用户可选；按需为 chat agent 开启或关闭。"
-          : "User-toggleable. Switch on or off to shape the chat agent's behavior.",
+        label: t("Experience Enhancement"),
+        hint: t(
+          "User-toggleable. Switch on or off to shape the chat agent's behavior.",
+        ),
         tools: experience,
       });
     }
     if (builtin.length) {
       out.push({
         key: "builtin",
-        label: zh ? "内置工具" : "Built-in Tools",
-        hint: zh
-          ? "Chat agent 在需要时自动挂载，无需手动开关。"
-          : "Mounted automatically by the chat agent when needed. Not user-toggleable.",
+        label: t("Built-in Tools"),
+        hint: t(
+          "Mounted automatically by the chat agent when needed. Not user-toggleable.",
+        ),
         tools: builtin,
       });
     }
     for (const [cap, list] of capabilities) {
-      const label = CAPABILITY_LABELS[cap]?.[zh ? "zh" : "en"] ?? cap;
+      const label = CAPABILITY_LABELS[cap] ? t(CAPABILITY_LABELS[cap]) : cap;
       out.push({
         key: `cap:${cap}`,
-        label: zh ? `${label} · 能力工具` : `${label} · Capability Tools`,
-        hint: zh
-          ? "该能力的专属工具，仅在此能力运行时挂载。"
-          : "Tools specific to this capability; mounted only when it runs.",
+        label: `${label} · ${t("Capability Tools")}`,
+        hint: t(
+          "Tools specific to this capability; mounted only when it runs.",
+        ),
         tools: list,
       });
     }
     return out;
-  }, [tools, language]);
+  }, [tools, t]);
 
   const toggleExpanded = (name: string) => {
     setExpanded((prev) => {
@@ -255,7 +256,7 @@ export default function ToolsSettingsPage() {
                 <div className="overflow-hidden rounded-xl border border-[var(--border)]/60 bg-[var(--card)]/40">
                   {list.map((tool, idx) => {
                     const isOpen = expanded.has(tool.name);
-                    const hints = tool.hints[language];
+                    const hints = tool.hints[language] ?? tool.hints.en;
                     const isPending = pending.has(tool.name);
                     const isComingSoon = !!tool.coming_soon;
                     const isEnabled =
@@ -302,9 +303,7 @@ export default function ToolsSettingsPage() {
                                 )}
                                 {isComingSoon && (
                                   <span className="inline-flex items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--muted)]/40 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
-                                    {language === "zh"
-                                      ? "敬请期待"
-                                      : "Coming soon"}
+                                    {t("Coming soon")}
                                   </span>
                                 )}
                               </div>
@@ -315,7 +314,9 @@ export default function ToolsSettingsPage() {
                                     : "text-[var(--muted-foreground)]"
                                 }`}
                               >
-                                {hints.short_description || tool.description}
+                                {hints.short_description ||
+                                  tool.description_i18n?.[language] ||
+                                  tool.description}
                               </p>
                             </div>
                             <ChevronDown
@@ -333,7 +334,7 @@ export default function ToolsSettingsPage() {
                                   /* locked */
                                 }}
                                 label={
-                                  language === "zh" ? "敬请期待" : "Coming soon"
+                                  t("Coming soon")
                                 }
                               />
                             ) : tool.toggleable ? (

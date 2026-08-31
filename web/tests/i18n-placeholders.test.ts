@@ -33,11 +33,10 @@ function listJsonFiles(dir: string): string[] {
 const NAMESPACE_KEY = /^[a-z][A-Za-z0-9]*(\.[A-Za-z0-9]+)+$/;
 
 const localesRoot = findLocalesRoot();
-const enRoot = path.join(localesRoot, "en");
 
-for (const file of listJsonFiles(enRoot)) {
+for (const file of listJsonFiles(localesRoot)) {
   const rel = path.relative(localesRoot, file).replaceAll("\\", "/");
-  test(`en locale ${rel} has no untranslated placeholder values`, () => {
+  test(`locale ${rel} has no untranslated placeholder values`, () => {
     const json = JSON.parse(fs.readFileSync(file, "utf8")) as Record<
       string,
       unknown

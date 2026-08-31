@@ -37,8 +37,6 @@ import CoursesShelf from "@/components/courses/CoursesShelf";
  * section page (which keeps the mini-nav for lateral movement).
  */
 
-type Lang = { zh: string; en: string };
-
 type DashKey =
   | "chat_history"
   | "notebooks"
@@ -54,13 +52,13 @@ interface DashboardItem {
   key: DashKey;
   href: string;
   icon: LucideIcon;
-  title: Lang;
-  blurb: Lang;
+  title: string;
+  blurb: string;
   /**
    * Unit shown after the live count, e.g. "168 conversations". Omitted
    * together with ``load`` for a tile that has nothing to count.
    */
-  unit?: Lang;
+  unit?: string;
   /** Icon-tile accent — full class strings so Tailwind keeps them. */
   tile: string;
   /**
@@ -81,24 +79,21 @@ interface DashboardItem {
 }
 
 interface DashboardGroup {
-  label: Lang;
+  label: string;
   items: DashboardItem[];
 }
 
 const GROUPS: DashboardGroup[] = [
   {
-    label: { zh: "对话与资料", en: "Conversations & Materials" },
+    label: "Conversations & Materials",
     items: [
       {
         key: "chat_history",
         href: "/space/chat-history",
         icon: History,
-        title: { zh: "聊天历史", en: "Chat History" },
-        blurb: {
-          zh: "回顾并继续此前的对话。",
-          en: "Review and reopen previous conversations.",
-        },
-        unit: { zh: "段对话", en: "conversations" },
+        title: "Chat History",
+        blurb: "Review and reopen previous conversations.",
+        unit: "conversations",
         tile: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
         load: async () => (await listSessions(200, 0, { force: true })).length,
       },
@@ -106,12 +101,9 @@ const GROUPS: DashboardGroup[] = [
         key: "notebooks",
         href: "/notebook",
         icon: NotebookPen,
-        title: { zh: "笔记本", en: "Notebooks" },
-        blurb: {
-          zh: "整理来自对话、研究、智能写作等的产出。",
-          en: "Organize saved outputs from chat, research, Co-Writer, and more.",
-        },
-        unit: { zh: "个笔记本", en: "notebooks" },
+        title: "Notebooks",
+        blurb: "Organize saved outputs from chat, research, Co-Writer, and more.",
+        unit: "notebooks",
         tile: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
         load: async () => (await listNotebooks()).length,
       },
@@ -119,30 +111,24 @@ const GROUPS: DashboardGroup[] = [
         key: "question_bank",
         href: "/space/questions",
         icon: ClipboardList,
-        title: { zh: "题库", en: "Question Bank" },
-        blurb: {
-          zh: "跨会话回顾和整理测验题目。",
-          en: "Review and organize quiz questions across sessions.",
-        },
-        unit: { zh: "道题", en: "questions" },
+        title: "Question Bank",
+        blurb: "Review and organize quiz questions across sessions.",
+        unit: "questions",
         tile: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
         load: async () => (await listNotebookEntries({ limit: 1 })).total,
       },
     ],
   },
   {
-    label: { zh: "个性化", en: "Personalization" },
+    label: "Personalization",
     items: [
       {
         key: "mastery_path",
         href: "/space/learning",
         icon: GraduationCap,
-        title: { zh: "精通之路", en: "Mastery Path" },
-        blurb: {
-          zh: "掌握式学习：硬门槛与间隔复习。",
-          en: "Mastery-based learning: hard gate and spaced review.",
-        },
-        unit: { zh: "条路径", en: "paths" },
+        title: "Mastery Path",
+        blurb: "Mastery-based learning: hard gate and spaced review.",
+        unit: "paths",
         tile: "bg-teal-500/10 text-teal-600 dark:text-teal-400",
         load: async () =>
           (await fetchAllProgress()).summaries.filter((s) => s.kp_count > 0)
@@ -152,12 +138,9 @@ const GROUPS: DashboardGroup[] = [
         key: "personas",
         href: "/space/personas",
         icon: UserRound,
-        title: { zh: "Personas", en: "Personas" },
-        blurb: {
-          zh: "可在每轮对话中套用的行为预设。",
-          en: "Behavior presets you can apply per chat turn.",
-        },
-        unit: { zh: "个预设", en: "personas" },
+        title: "Personas",
+        blurb: "Behavior presets you can apply per chat turn.",
+        unit: "personas",
         tile: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
         load: async () => (await listPersonas()).length,
       },
@@ -165,12 +148,9 @@ const GROUPS: DashboardGroup[] = [
         key: "skills",
         href: "/space/skills",
         icon: Wand2,
-        title: { zh: "技能", en: "Skills" },
-        blurb: {
-          zh: "模型按需读取的能力手册。",
-          en: "Capability playbooks the model reads on demand.",
-        },
-        unit: { zh: "个技能", en: "skills" },
+        title: "Skills",
+        blurb: "Capability playbooks the model reads on demand.",
+        unit: "skills",
         tile: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400",
         load: async () => (await listSkills()).length,
       },
@@ -178,12 +158,9 @@ const GROUPS: DashboardGroup[] = [
         key: "mcp",
         href: "/space/mcp",
         icon: Plug,
-        title: { zh: "MCP 服务", en: "MCP Services" },
-        blurb: {
-          zh: "连接托管 MCP 服务，把它们的工具带进对话。",
-          en: "Connect hosted MCP services and bring their tools into chat.",
-        },
-        unit: { zh: "个服务", en: "services" },
+        title: "MCP Services",
+        blurb: "Connect hosted MCP services and bring their tools into chat.",
+        unit: "services",
         tile: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
         // The account's own servers only: the deployment's are shown on the page
         // but are not this reader's to count.
@@ -194,12 +171,9 @@ const GROUPS: DashboardGroup[] = [
         key: "cli_apps",
         href: "/space/cli-apps",
         icon: Terminal,
-        title: { zh: "CLI 应用", en: "CLI Apps" },
-        blurb: {
-          zh: "来自 CLI-Anything 目录的命令行工具，启用后对话可直接调用。",
-          en: "Command-line tools from the CLI-Anything catalog, callable from chat.",
-        },
-        unit: { zh: "个应用", en: "apps" },
+        title: "CLI Apps",
+        blurb: "Command-line tools from the CLI-Anything catalog, callable from chat.",
+        unit: "apps",
         tile: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
         // What this reader can actually use, not what the deployment installed:
         // an app they were not granted is visible on the page but is not theirs.
@@ -210,17 +184,14 @@ const GROUPS: DashboardGroup[] = [
     ],
   },
   {
-    label: { zh: "更多项目", en: "More Projects" },
+    label: "More Projects",
     items: [
       {
         key: "whisper",
         href: "/whisper",
         icon: Ear,
-        title: { zh: "密语", en: "Whisper" },
-        blurb: {
-          zh: "双席位咨询练习房间：督导只对受训者耳语。",
-          en: "Dual-seat practice room — the supervisor whispers to the trainee only.",
-        },
+        title: "Whisper",
+        blurb: "Dual-seat practice room — the supervisor whispers to the trainee only.",
         tile: "bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-400",
         credit: "alanguan73",
         // Served by the out-of-tree psych-academy plugin, not by this repo.
@@ -260,9 +231,7 @@ export function visibleGroups(
 export { GROUPS as DASHBOARD_GROUPS };
 
 export default function SpaceDashboard() {
-  const { i18n } = useTranslation();
-  const zh = i18n.language?.toLowerCase().startsWith("zh");
-  const tr = useCallback((l: Lang) => (zh ? l.zh : l.en), [zh]);
+  const { t } = useTranslation();
 
   const [counts, setCounts] = useState<Partial<Record<DashKey, number>>>({});
 
@@ -296,13 +265,10 @@ export default function SpaceDashboard() {
     <div>
       <header className="mb-8">
         <h1 className="font-serif text-[24px] font-semibold leading-tight tracking-tight text-[var(--foreground)]">
-          {tr({ zh: "学习空间", en: "Learning Space" })}
+          {t("Learning Space")}
         </h1>
         <p className="mt-1.5 max-w-xl text-[13px] leading-relaxed text-[var(--muted-foreground)]">
-          {tr({
-            zh: "你的对话、智能体、笔记与练习，集中在一处 —— 从这里进入。",
-            en: "Your conversations, agents, notebooks, and practice in one place — enter from here.",
-          })}
+          {t("Your conversations, agents, notebooks, and practice in one place — enter from here.")}
         </p>
       </header>
 
@@ -310,9 +276,9 @@ export default function SpaceDashboard() {
 
       <div className="space-y-9">
         {groups.map((group) => (
-          <section key={group.label.en}>
+          <section key={group.label}>
             <h2 className="mb-3 px-0.5 font-serif text-[16px] font-semibold tracking-tight text-[var(--foreground)]">
-              {tr(group.label)}
+              {t(group.label)}
             </h2>
             <div className="grid gap-3 sm:grid-cols-2">
               {group.items.map((item) => (
@@ -320,7 +286,7 @@ export default function SpaceDashboard() {
                   key={item.key}
                   item={item}
                   count={counts[item.key]}
-                  tr={tr}
+                  t={t}
                 />
               ))}
             </div>
@@ -334,11 +300,11 @@ export default function SpaceDashboard() {
 function DashboardCard({
   item,
   count,
-  tr,
+  t,
 }: {
   item: DashboardItem;
   count: number | undefined;
-  tr: (l: Lang) => string;
+  t: (key: string, options?: Record<string, unknown>) => string;
 }) {
   const Icon = item.icon;
   const loaded = count !== undefined;
@@ -361,7 +327,7 @@ function DashboardCard({
         </span>
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-[14.5px] font-medium leading-tight tracking-tight text-[var(--foreground)]">
-            {tr(item.title)}
+            {t(item.title)}
           </h3>
           {item.unit ? (
             <div className="mt-1 flex items-baseline gap-1.5">
@@ -371,7 +337,7 @@ function DashboardCard({
                     {formatted}
                   </span>
                   <span className="text-[12px] text-[var(--muted-foreground)]">
-                    {tr(item.unit)}
+                    {t(item.unit)}
                   </span>
                 </>
               ) : (
@@ -386,7 +352,7 @@ function DashboardCard({
         />
       </div>
       <p className="mt-3 text-[12.5px] leading-relaxed text-[var(--muted-foreground)]">
-        {tr(item.blurb)}
+        {t(item.blurb)}
       </p>
       {item.credit ? (
         <span className="mt-2.5 inline-flex items-center gap-1 self-start text-[11px] leading-none text-[var(--muted-foreground)] opacity-60">
