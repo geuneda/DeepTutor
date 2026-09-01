@@ -43,7 +43,7 @@ function LoginPageContent() {
     if (result.ok) {
       router.replace(next);
     } else {
-      setError(result.error ?? t("Login failed"));
+      setError(result.error ? t(result.error) : t("Login failed"));
       setLoading(false);
     }
   }
@@ -151,18 +151,20 @@ function LoginPageContent() {
       </p>
 
       <p className="mt-3 text-center text-xs text-[var(--muted-foreground)]">
-        DeepTutor · Agent-Native Learning
+        {t("DeepTutor · Agent-Native Learning")}
       </p>
     </div>
   );
 }
 
 export default function LoginPage() {
+  const { t } = useTranslation();
+
   return (
     <Suspense
       fallback={
         <div className="w-full max-w-sm text-center text-sm text-[var(--muted-foreground)]">
-          Loading sign in...
+          {t("Loading sign in...")}
         </div>
       }
     >

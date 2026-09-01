@@ -26,6 +26,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useTranslation } from "react-i18next";
 import { updateNotebookEntry } from "@/lib/notebook-api";
 import { shouldAppendEventContent } from "@/lib/stream";
 import { hasPendingAskUser } from "@/lib/ask-user-state";
@@ -216,6 +217,7 @@ interface ProviderProps {
 }
 
 export function QuizFollowupProvider({ children }: ProviderProps) {
+  const { t } = useTranslation();
   const [threads, setThreads] = useState<Record<string, FollowupThreadState>>(
     {},
   );
@@ -368,7 +370,7 @@ export function QuizFollowupProvider({ children }: ProviderProps) {
                 activeTurnId: null,
                 error:
                   prev.error ||
-                  "Follow-up chat failed because the connection closed.",
+                  t("Follow-up chat failed because the connection closed."),
               }));
             }
           },
@@ -378,7 +380,7 @@ export function QuizFollowupProvider({ children }: ProviderProps) {
       record.client.connect();
       return record;
     },
-    [handleThreadEvent, updateThread],
+    [handleThreadEvent, t, updateThread],
   );
 
   const sendThroughRunner = useCallback(
@@ -390,7 +392,7 @@ export function QuizFollowupProvider({ children }: ProviderProps) {
             ...prev,
             isStreaming: false,
             currentStage: "",
-            error: "Follow-up chat failed to connect.",
+            error: t("Follow-up chat failed to connect."),
           }));
           return;
         }
@@ -399,7 +401,7 @@ export function QuizFollowupProvider({ children }: ProviderProps) {
       }
       runner.client.send(message);
     },
-    [ensureRunner, updateThread],
+    [ensureRunner, t, updateThread],
   );
 
   const sendMessage = useCallback(

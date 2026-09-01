@@ -48,6 +48,8 @@ type InstallState =
   | { kind: "done"; verdict: string }
   | { kind: "error"; message: string };
 
+type Translate = (cn: string, en: string, ko: string) => string;
+
 export default function EduHubImportModal({
   onClose,
   onInstalled,
@@ -59,8 +61,15 @@ export default function EduHubImportModal({
   installedNames?: Set<string>;
 }) {
   const { i18n } = useTranslation();
-  const zh = i18n.language?.toLowerCase().startsWith("zh");
-  const tr = useCallback((cn: string, en: string) => (zh ? cn : en), [zh]);
+  const language = i18n.language?.toLowerCase().startsWith("zh")
+    ? "zh"
+    : i18n.language?.toLowerCase().startsWith("ko")
+      ? "ko"
+      : "en";
+  const tr = useCallback<Translate>(
+    (cn, en, ko) => (language === "zh" ? cn : language === "ko" ? ko : en),
+    [language],
+  );
 
   const [skills, setSkills] = useState<HubSkillListing[] | null>(null);
   const [webUrl, setWebUrl] = useState<string>(EDUHUB_FALLBACK);
@@ -184,7 +193,11 @@ export default function EduHubImportModal({
               className="shrink-0 text-[var(--muted-foreground)]"
             />
             <h3 className="truncate text-[14px] font-semibold text-[var(--foreground)]">
-              {tr("从 EduHub 导入技能", "Import skills from EduHub")}
+              {tr(
+                "从 EduHub 导入技能",
+                "Import skills from EduHub",
+                "EduHub에서 스킬 가져오기",
+              )}
             </h3>
           </div>
           <div className="flex shrink-0 items-center gap-1">
@@ -195,11 +208,11 @@ export default function EduHubImportModal({
               className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12px] text-[var(--muted-foreground)] transition-colors hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
             >
               <ExternalLink size={13} />
-              {tr("在 EduHub 打开", "Open EduHub")}
+              {tr("在 EduHub 打开", "Open EduHub", "EduHub 열기")}
             </a>
             <button
               onClick={onClose}
-              aria-label={tr("关闭", "Close")}
+              aria-label={tr("关闭", "Close", "닫기")}
               className="rounded-md p-1.5 text-[var(--muted-foreground)] transition-colors hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
             >
               <X size={16} />
@@ -264,7 +277,7 @@ function ListView({
   query: string;
   installState: Record<string, InstallState>;
   installedLocal: Set<string>;
-  tr: (cn: string, en: string) => string;
+  tr: Translate;
   onQueryChange: (q: string) => void;
   onRetry: () => void;
   onOpen: (skill: HubSkillListing) => void;
@@ -282,7 +295,11 @@ function ListView({
           <input
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
-            placeholder={tr("搜索技能名称或描述…", "Search skills…")}
+            placeholder={tr(
+              "搜索技能名称或描述…",
+              "Search skills…",
+              "스킬 검색…",
+            )}
             className="w-full rounded-lg border border-[var(--border)] bg-[var(--card)] py-2 pl-9 pr-3 text-[13px] text-[var(--foreground)] outline-none transition-colors placeholder:text-[var(--muted-foreground)]/70 focus:border-[var(--foreground)]/30"
           />
         </div>
@@ -296,7 +313,13 @@ function ListView({
         ) : error ? (
           <div className="mx-auto max-w-md rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-center text-[12.5px] text-amber-700 dark:text-amber-400">
             <AlertTriangle size={16} className="mx-auto mb-1.5" />
-            <p>{tr("无法连接 EduHub。", "Couldn't reach EduHub.")}</p>
+            <p>
+              {tr(
+                "无法连接 EduHub。",
+                "Couldn't reach EduHub.",
+                "EduHub에 연결할 수 없습니다.",
+              )}
+            </p>
             <p className="mt-0.5 break-words text-[11.5px] opacity-80">
               {error}
             </p>
@@ -305,14 +328,22 @@ function ListView({
               className="mt-2.5 inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-[12px] font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--muted)]"
             >
               <RefreshCw size={12} />
-              {tr("重试", "Retry")}
+              {tr("重试", "Retry", "다시 시도")}
             </button>
           </div>
         ) : skills.length === 0 ? (
           <div className="py-16 text-center text-[13px] text-[var(--muted-foreground)]">
             {total === 0
-              ? tr("EduHub 上暂时还没有技能。", "No skills on EduHub yet.")
-              : tr("没有匹配的技能。", "No skills match your search.")}
+              ? tr(
+                  "EduHub 上暂时还没有技能。",
+                  "No skills on EduHub yet.",
+                  "EduHub에 아직 스킬이 없습니다.",
+                )
+              : tr(
+                  "没有匹配的技能。",
+                  "No skills match your search.",
+                  "검색과 일치하는 스킬이 없습니다.",
+                )}
           </div>
         ) : (
           <ul className="grid gap-3 sm:grid-cols-2">
@@ -345,7 +376,7 @@ function SkillCard({
   skill: HubSkillListing;
   state?: InstallState;
   installed: boolean;
-  tr: (cn: string, en: string) => string;
+  tr: Translate;
   onOpen: () => void;
   onInstall: (slug: string, opts?: { force?: boolean }) => void;
 }) {
@@ -360,7 +391,7 @@ function SkillCard({
           onOpen();
         }
       }}
-      title={tr("查看详情", "View details")}
+      title={tr("查看详情", "View details", "상세 보기")}
       className="group relative flex cursor-pointer flex-col rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm transition-all hover:border-[var(--foreground)]/30 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]/40"
     >
       <div className="flex items-start gap-2.5">
@@ -375,7 +406,7 @@ function SkillCard({
             {installed ? (
               <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-emerald-500/12 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
                 <CheckCircle2 size={9} />
-                {tr("已导入", "Installed")}
+                {tr("已导入", "Installed", "설치됨")}
               </span>
             ) : null}
           </div>
@@ -385,7 +416,7 @@ function SkillCard({
             </p>
           ) : (
             <p className="mt-0.5 text-[12px] italic text-[var(--muted-foreground)]/60">
-              {tr("暂无描述。", "No description.")}
+              {tr("暂无描述。", "No description.", "설명이 없습니다.")}
             </p>
           )}
         </div>
@@ -443,7 +474,7 @@ function DetailView({
   installState?: InstallState;
   installed: boolean;
   webUrl: string;
-  tr: (cn: string, en: string) => string;
+  tr: Translate;
   onBack: () => void;
   onInstall: (slug: string, opts?: { force?: boolean }) => void;
 }) {
@@ -456,7 +487,7 @@ function DetailView({
           className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[12.5px] text-[var(--muted-foreground)] transition-colors hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
         >
           <ArrowLeft size={13} />
-          {tr("返回", "Back")}
+          {tr("返回", "Back", "뒤로")}
         </button>
         <div className="flex items-center gap-1.5">
           <a
@@ -466,7 +497,7 @@ function DetailView({
             className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12px] text-[var(--muted-foreground)] transition-colors hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
           >
             <ExternalLink size={13} />
-            {tr("在 EduHub 查看", "View on EduHub")}
+            {tr("在 EduHub 查看", "View on EduHub", "EduHub에서 보기")}
           </a>
           <InstallButton
             state={installState}
@@ -491,7 +522,7 @@ function DetailView({
         <div className="mb-4 flex flex-wrap items-center gap-3 text-[11.5px] text-[var(--muted-foreground)]">
           <span className="inline-flex items-center gap-1">
             <Download size={12} />
-            {skill.downloads} {tr("次下载", "downloads")}
+            {skill.downloads} {tr("次下载", "downloads", "회 다운로드")}
           </span>
           <span className="inline-flex items-center gap-1">
             <Star size={12} />
@@ -515,7 +546,7 @@ function DetailView({
 
         {installState?.kind === "error" ? (
           <div className="mb-4 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-[12px] text-amber-700 dark:text-amber-400">
-            {tr("导入失败：", "Import failed: ")}
+            {tr("导入失败：", "Import failed: ", "가져오기 실패: ")}
             {installState.message}
           </div>
         ) : null}
@@ -548,24 +579,24 @@ function InstallButton({
 }: {
   state?: InstallState;
   installed: boolean;
-  tr: (cn: string, en: string) => string;
+  tr: Translate;
   onClick: (force: boolean) => void;
 }) {
   if (state?.kind === "installing") {
     return (
       <span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[var(--muted)] px-3 py-1.5 text-[12px] font-medium text-[var(--muted-foreground)]">
         <Loader2 size={12} className="animate-spin" />
-        {tr("下载中…", "Downloading…")}
+        {tr("下载中…", "Downloading…", "다운로드 중…")}
       </span>
     );
   }
 
   const label =
     state?.kind === "error"
-      ? tr("重试", "Retry")
+      ? tr("重试", "Retry", "다시 시도")
       : installed
-        ? tr("重新下载", "Re-download")
-        : tr("下载", "Download");
+        ? tr("重新下载", "Re-download", "다시 다운로드")
+        : tr("下载", "Download", "다운로드");
   const Icon = installed ? RefreshCw : Download;
 
   return (

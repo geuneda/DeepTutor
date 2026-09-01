@@ -46,7 +46,7 @@ export default function RegisterPage() {
     if (result.ok) {
       router.replace("/login?registered=1");
     } else {
-      setError(result.error ?? t("Registration failed"));
+      setError(result.error ? t(result.error) : t("Registration failed"));
       setLoading(false);
     }
   }
@@ -184,7 +184,7 @@ export default function RegisterPage() {
       </p>
 
       <p className="mt-3 text-center text-xs text-[var(--muted-foreground)]">
-        DeepTutor · Agent-Native Learning
+        {t("DeepTutor · Agent-Native Learning")}
       </p>
     </div>
   );

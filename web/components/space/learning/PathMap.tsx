@@ -18,17 +18,28 @@ import {
 } from "@/lib/learning-api";
 
 import { ObjectiveDetail } from "./ObjectiveDetail";
-import type { Translate } from "./format";
+import type { LearningLanguage, Translate } from "./format";
 
 export const STATUS_META: Record<
   ObjectiveStatus,
-  { cn: string; en: string; className: string }
+  { cn: string; en: string; ko: string; className: string }
 > = {
-  mastered: { cn: "已掌握", en: "Mastered", className: "text-green-500" },
-  learning: { cn: "学习中", en: "Learning", className: "text-yellow-500" },
+  mastered: {
+    cn: "已掌握",
+    en: "Mastered",
+    ko: "숙달됨",
+    className: "text-green-500",
+  },
+  learning: {
+    cn: "学习中",
+    en: "Learning",
+    ko: "학습 중",
+    className: "text-yellow-500",
+  },
   new: {
     cn: "未开始",
     en: "Not started",
+    ko: "시작 전",
     className: "text-[var(--muted-foreground)]",
   },
 };
@@ -46,13 +57,13 @@ export function PathMap({
   map,
   revision,
   tr,
-  zh,
+  language,
 }: {
   pathId: string;
   map: MasteryMap;
   revision: number;
   tr: Translate;
-  zh: boolean;
+  language: LearningLanguage;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [report, setReport] = useState<ObjectiveReport | null>(null);
@@ -113,14 +124,20 @@ export function PathMap({
                     <span
                       className={`text-xs ${STATUS_META[kp.status].className}`}
                     >
-                      {zh
+                      {language === "zh"
                         ? STATUS_META[kp.status].cn
-                        : STATUS_META[kp.status].en}
+                        : language === "ko"
+                          ? STATUS_META[kp.status].ko
+                          : STATUS_META[kp.status].en}
                     </span>
                   </button>
                   {open &&
                     (loaded && report ? (
-                      <ObjectiveDetail report={report} tr={tr} zh={zh} />
+                      <ObjectiveDetail
+                        report={report}
+                        tr={tr}
+                        language={language}
+                      />
                     ) : (
                       <div className="ml-8 py-2 text-[var(--muted-foreground)]">
                         <Loader2 className="h-3 w-3 animate-spin" />

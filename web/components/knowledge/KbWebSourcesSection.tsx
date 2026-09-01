@@ -38,7 +38,7 @@ export default function KbWebSourcesSection({
       setError(null);
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
-        setError("Timed out loading web sources. Click retry.");
+        setError(t("Timed out loading web sources. Click retry."));
       } else {
         setError(err instanceof Error ? err.message : String(err));
       }
@@ -46,7 +46,7 @@ export default function KbWebSourcesSection({
       clearTimeout(timeout);
       setLoading(false);
     }
-  }, [kbName]);
+  }, [kbName, t]);
 
   useEffect(() => {
     void refresh();

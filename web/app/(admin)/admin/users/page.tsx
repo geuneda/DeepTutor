@@ -47,7 +47,11 @@ function formatDate(iso: string, lang: Language): string {
 export default function AdminUsersPage() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
-  const lang: Language = i18n.language?.startsWith("zh") ? "zh" : "en";
+  const lang: Language = i18n.language?.startsWith("zh")
+    ? "zh"
+    : i18n.language?.startsWith("ko")
+      ? "ko"
+      : "en";
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [loading, setLoading] = useState(true);

@@ -82,7 +82,7 @@ export function PathTitle({
             hover-revealed affordance does not exist on a touch screen. */}
         <button
           onClick={() => setEditing(true)}
-          title={tr("重命名", "Rename")}
+          title={tr("重命名", "Rename", "이름 바꾸기")}
           className="shrink-0 cursor-pointer rounded p-1 text-[var(--muted-foreground)]/60 transition-colors hover:bg-[var(--accent)] hover:text-[var(--foreground)]"
         >
           <Pencil className="h-3 w-3" />
@@ -107,7 +107,11 @@ export function PathTitle({
           if (draft.trim() === name.trim()) setEditing(false);
         }}
         maxLength={200}
-        placeholder={tr("这条路叫什么？", "What is this path called?")}
+        placeholder={tr(
+          "这条路叫什么？",
+          "What is this path called?",
+          "이 경로의 이름을 입력하세요",
+        )}
         className="min-w-0 flex-1 rounded-md border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)] disabled:opacity-60"
       />
       {/* mousedown, not click: blur fires first and would commit-then-cancel. */}
@@ -116,7 +120,7 @@ export function PathTitle({
           event.preventDefault();
           void commit();
         }}
-        title={tr("保存", "Save")}
+        title={tr("保存", "Save", "저장")}
         className="shrink-0 cursor-pointer rounded p-1 text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)]"
       >
         <Check className="h-3.5 w-3.5" />
@@ -126,7 +130,7 @@ export function PathTitle({
           event.preventDefault();
           cancel();
         }}
-        title={tr("取消", "Cancel")}
+        title={tr("取消", "Cancel", "취소")}
         className="shrink-0 cursor-pointer rounded p-1 text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)]"
       >
         <X className="h-3.5 w-3.5" />

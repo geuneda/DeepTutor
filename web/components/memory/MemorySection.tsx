@@ -305,11 +305,11 @@ export default function MemorySection({
       const data = (await res.json()) as OverviewResponse;
       setOverview(data);
     } catch (e) {
-      setToast(e instanceof Error ? e.message : "Failed to load overview");
+      setToast(e instanceof Error ? e.message : t("Failed to load overview"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void loadOverview();
@@ -332,9 +332,9 @@ export default function MemorySection({
       setContent(md);
       setEditorValue(md);
     } catch (e) {
-      setToast(e instanceof Error ? e.message : "Failed to load document");
+      setToast(e instanceof Error ? e.message : t("Failed to load document"));
     }
-  }, []);
+  }, [t]);
 
   const saveDoc = useCallback(async () => {
     if (!selected) return;
@@ -353,7 +353,7 @@ export default function MemorySection({
       setToast(t("Saved"));
       void loadOverview();
     } catch (e) {
-      setToast(e instanceof Error ? e.message : "Failed to save");
+      setToast(e instanceof Error ? e.message : t("Failed to save"));
     } finally {
       setBusy(false);
     }
@@ -407,7 +407,7 @@ export default function MemorySection({
       void loadDoc(selected.layer, selected.key);
       void loadOverview();
     } catch (e) {
-      setToast(e instanceof Error ? e.message : "Update failed");
+      setToast(e instanceof Error ? e.message : t("Update failed"));
     } finally {
       setBusy(false);
     }
@@ -685,11 +685,11 @@ export function L1View({
       const data = (await res.json()) as SnapshotResponse;
       setSnapshot(data);
     } catch (e) {
-      onToast(e instanceof Error ? e.message : "Failed to load snapshot");
+      onToast(e instanceof Error ? e.message : t("Failed to load snapshot"));
     } finally {
       setLoadingSnapshot(false);
     }
-  }, [surface, onToast]);
+  }, [onToast, surface, t]);
 
   const loadChanges = useCallback(async () => {
     setLoadingChanges(true);
@@ -700,11 +700,11 @@ export function L1View({
       const data = (await res.json()) as ChangesResponse;
       setChanges(data.changes);
     } catch (e) {
-      onToast(e instanceof Error ? e.message : "Failed to load changes");
+      onToast(e instanceof Error ? e.message : t("Failed to load changes"));
     } finally {
       setLoadingChanges(false);
     }
-  }, [surface, onToast]);
+  }, [onToast, surface, t]);
 
   const loadKbQueries = useCallback(async () => {
     if (surface !== "kb") return;
@@ -714,11 +714,11 @@ export function L1View({
       const data = (await res.json()) as KbQueriesResponse;
       setKbQueries(data.events);
     } catch (e) {
-      onToast(e instanceof Error ? e.message : "Failed to load queries");
+      onToast(e instanceof Error ? e.message : t("Failed to load queries"));
     } finally {
       setLoadingQueries(false);
     }
-  }, [surface, onToast]);
+  }, [onToast, surface, t]);
 
   useEffect(() => {
     setSnapshot(null);
@@ -783,7 +783,7 @@ export function L1View({
       await loadSnapshot();
       await loadChanges();
     } catch (e) {
-      onToast(e instanceof Error ? e.message : "Refresh failed");
+      onToast(e instanceof Error ? e.message : t("Refresh failed"));
     } finally {
       setRefreshing(false);
     }

@@ -26,7 +26,10 @@ import { useMasteryPathActivity } from "@/hooks/useMasteryPathActivity";
 import { ActivityTimeline } from "@/components/space/learning/ActivityTimeline";
 import { PathMap } from "@/components/space/learning/PathMap";
 import { PathTitle } from "@/components/space/learning/PathTitle";
-import { formatRelative } from "@/components/space/learning/format";
+import {
+  formatRelative,
+  type LearningLanguage,
+} from "@/components/space/learning/format";
 
 /**
  * Mastery Path dashboard — the persistent "screen" of the mastery experience.
@@ -40,8 +43,18 @@ import { formatRelative } from "@/components/space/learning/format";
  */
 export default function MasteryPathPage() {
   const { i18n } = useTranslation();
-  const zh = !!i18n.language?.toLowerCase().startsWith("zh");
-  const tr = useCallback((cn: string, en: string) => (zh ? cn : en), [zh]);
+  const language: LearningLanguage = i18n.language
+    ?.toLowerCase()
+    .startsWith("zh")
+    ? "zh"
+    : i18n.language?.toLowerCase().startsWith("ko")
+      ? "ko"
+      : "en";
+  const tr = useCallback(
+    (cn: string, en: string, ko: string) =>
+      language === "zh" ? cn : language === "ko" ? ko : en,
+    [language],
+  );
   const router = useRouter();
 
   const [paths, setPaths] = useState<ProgressSummary[]>([]);
@@ -113,7 +126,11 @@ export default function MasteryPathPage() {
     async (pathId: string) => {
       if (
         !window.confirm(
-          tr("确定删除这条精通之路？", "Delete this mastery path?"),
+          tr(
+            "确定删除这条精通之路？",
+            "Delete this mastery path?",
+            "이 숙달 경로를 삭제할까요?",
+          ),
         )
       )
         return;
@@ -131,6 +148,7 @@ export default function MasteryPathPage() {
           tr(
             "重置进度？知识点保留，但掌握度与复习计划清空。",
             "Reset progress? Objectives are kept, but mastery and reviews are cleared.",
+            "진행 상황을 초기화할까요? 학습 목표는 유지되지만 숙달도와 복습 일정은 초기화됩니다.",
           ),
         )
       )
@@ -169,6 +187,7 @@ export default function MasteryPathPage() {
           tr(
             "跳过这道待回答的题目？已掌握的进度都会保留。",
             "Skip the question awaiting an answer? Mastery already earned is kept.",
+            "답변을 기다리는 문제를 건너뛸까요? 이미 달성한 숙달도는 유지됩니다.",
           ),
         )
       )
@@ -187,13 +206,14 @@ export default function MasteryPathPage() {
           <div className="flex items-center gap-2 text-[var(--foreground)]">
             <GraduationCap className="h-4 w-4" />
             <h1 className="text-sm font-semibold">
-              {tr("精通之路", "Mastery Path")}
+              {tr("精通之路", "Mastery Path", "숙달 경로")}
             </h1>
           </div>
           <p className="mt-1 text-xs text-[var(--muted-foreground)]">
             {tr(
               "掌握式学习：硬门槛 + 间隔复习",
               "Mastery-based learning: hard gate + spaced review",
+              "숙달 기반 학습: 엄격한 통과 기준 + 간격 반복",
             )}
           </p>
         </header>
@@ -207,6 +227,7 @@ export default function MasteryPathPage() {
               {tr(
                 "还没有精通之路。去「对话」选择 Mastery Path 模式，让导师根据你的材料建一条。",
                 "No paths yet. Open Chat, pick Mastery Path mode, and ask the tutor to build one from your materials.",
+                "아직 숙달 경로가 없습니다. 채팅을 열고 숙달 경로 모드를 선택한 다음, 학습 자료를 바탕으로 경로를 만들어 달라고 요청하세요.",
               )}
             </p>
           ) : (
@@ -224,7 +245,7 @@ export default function MasteryPathPage() {
                   {path.name}
                 </div>
                 <div className="mt-0.5 text-xs text-[var(--muted-foreground)]">
-                  {path.kp_count} {tr("个知识点", "objectives")} ·{" "}
+                  {path.kp_count} {tr("个知识点", "objectives", "학습 목표")} ·{" "}
                   {path.avg_mastery_pct}%
                 </div>
               </button>
@@ -237,7 +258,7 @@ export default function MasteryPathPage() {
             className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-md bg-[var(--primary)] px-3 py-2 text-sm text-[var(--primary-foreground)] transition-opacity hover:opacity-90"
           >
             <MessageSquare className="h-3.5 w-3.5" />
-            {tr("新建（在对话中）", "New (in Chat)")}
+            {tr("新建（在对话中）", "New (in Chat)", "새로 만들기(채팅)")}
           </button>
         </footer>
       </aside>
@@ -255,6 +276,7 @@ export default function MasteryPathPage() {
               {tr(
                 "选择一条精通之路查看进度地图，或在「对话」里用 Mastery Path 模式开始。",
                 "Select a path to see its progress map, or start one in Chat with Mastery Path mode.",
+                "진행 지도를 보려면 숙달 경로를 선택하거나, 채팅에서 숙달 경로 모드로 새 경로를 시작하세요.",
               )}
             </p>
           </div>
@@ -268,7 +290,7 @@ export default function MasteryPathPage() {
             objectiveNames={objectiveNames}
             tab={tab}
             onTabChange={setTab}
-            zh={zh}
+            language={language}
             tr={tr}
             onContinue={() => router.push(newMasteryPathChatUrl(selected))}
             onSkipQuestion={() => handleSkipQuestion(selected)}
@@ -281,16 +303,40 @@ export default function MasteryPathPage() {
   );
 }
 
-const ACTION_LABEL: Record<string, { cn: string; en: string }> = {
-  probe: { cn: "先探查是否已掌握", en: "Probe — test out first" },
-  practice: { cn: "练习直到达标", en: "Practice until the gate clears" },
-  assess: { cn: "用自己的话解释", en: "Explain it in your own words" },
-  review: { cn: "到期复习", en: "Due for review" },
+const ACTION_LABEL: Record<
+  string,
+  { cn: string; en: string; ko: string }
+> = {
+  probe: {
+    cn: "先探查是否已掌握",
+    en: "Probe — test out first",
+    ko: "먼저 숙달 여부 확인",
+  },
+  practice: {
+    cn: "练习直到达标",
+    en: "Practice until the gate clears",
+    ko: "통과할 때까지 연습",
+  },
+  assess: {
+    cn: "用自己的话解释",
+    en: "Explain it in your own words",
+    ko: "자신의 말로 설명",
+  },
+  review: {
+    cn: "到期复习",
+    en: "Due for review",
+    ko: "복습 예정",
+  },
   answer_pending: {
     cn: "有待回答的问题",
     en: "A question is awaiting your answer",
+    ko: "답변을 기다리는 문제가 있습니다",
   },
-  complete: { cn: "已全部掌握 🎉", en: "All mastered 🎉" },
+  complete: {
+    cn: "已全部掌握 🎉",
+    en: "All mastered 🎉",
+    ko: "모두 숙달함",
+  },
 };
 
 function PathView({
@@ -301,7 +347,7 @@ function PathView({
   objectiveNames,
   tab,
   onTabChange,
-  zh,
+  language,
   tr,
   onContinue,
   onRename,
@@ -316,8 +362,8 @@ function PathView({
   objectiveNames: Record<string, string>;
   tab: "map" | "activity";
   onTabChange: (tab: "map" | "activity") => void;
-  zh: boolean;
-  tr: (cn: string, en: string) => string;
+  language: LearningLanguage;
+  tr: (cn: string, en: string, ko: string) => string;
   onContinue: () => void;
   onRename: (name: string) => Promise<void>;
   onSkipQuestion: () => void;
@@ -331,6 +377,7 @@ function PathView({
   const action = ACTION_LABEL[next.action] ?? {
     cn: next.reason,
     en: next.reason,
+    ko: next.reason,
   };
   const lastEvent = events.length ? events[events.length - 1] : null;
 
@@ -350,17 +397,17 @@ function PathView({
           <div className="mt-1 flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
             <span>
               {map.counts.mastered}/{map.counts.total}{" "}
-              {tr("已掌握", "mastered")}
+              {tr("已掌握", "mastered", "숙달")}
             </span>
             {map.due_reviews > 0 && (
               <span className="text-yellow-600">
-                · {map.due_reviews} {tr("项待复习", "due for review")}
+                · {map.due_reviews} {tr("项待复习", "due for review", "복습 예정")}
               </span>
             )}
             {lastEvent && (
               <span>
-                · {tr("最近更新 ", "updated ")}
-                {formatRelative(lastEvent.created_at, zh)}
+                · {tr("最近更新 ", "updated ", "업데이트 ")}
+                {formatRelative(lastEvent.created_at, language)}
               </span>
             )}
           </div>
@@ -374,14 +421,14 @@ function PathView({
         <div className="flex shrink-0 items-center gap-1.5">
           <button
             onClick={onRedo}
-            title={tr("重置进度", "Reset progress")}
+            title={tr("重置进度", "Reset progress", "진행 상황 초기화")}
             className="cursor-pointer rounded-md p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--accent)]"
           >
             <RotateCcw className="h-4 w-4" />
           </button>
           <button
             onClick={onDelete}
-            title={tr("删除", "Delete")}
+            title={tr("删除", "Delete", "삭제")}
             className="cursor-pointer rounded-md p-1.5 text-[var(--muted-foreground)] hover:bg-red-500/10 hover:text-red-500"
           >
             <Trash2 className="h-4 w-4" />
@@ -392,12 +439,12 @@ function PathView({
       {/* Next step */}
       <div className="mt-4 rounded-lg border border-[var(--border)] p-3">
         <div className="text-xs text-[var(--muted-foreground)]">
-          {tr("接下来", "Next")}
+          {tr("接下来", "Next", "다음")}
         </div>
         <div className="mt-0.5 text-sm font-medium text-[var(--foreground)]">
           {next.action === "complete"
-            ? tr(action.cn, action.en)
-            : `${next.knowledge_point_name} — ${tr(action.cn, action.en)}`}
+            ? tr(action.cn, action.en, action.ko)
+            : `${next.knowledge_point_name} — ${tr(action.cn, action.en, action.ko)}`}
         </div>
         {next.pending_prompt && (
           <p className="mt-1 text-xs text-[var(--muted-foreground)]">
@@ -409,7 +456,11 @@ function PathView({
             onClick={onContinue}
             className="cursor-pointer text-xs text-[var(--primary)] hover:underline"
           >
-            {tr("在对话中继续辅导 →", "Continue tutoring in Chat →")}
+            {tr(
+              "在对话中继续辅导 →",
+              "Continue tutoring in Chat →",
+              "채팅에서 학습 계속하기 →",
+            )}
           </button>
           {/* Only reachable escape from a question whose conversation is gone;
               unlike Reset it keeps every mastery level already earned. */}
@@ -418,7 +469,7 @@ function PathView({
               onClick={onSkipQuestion}
               className="cursor-pointer text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:underline"
             >
-              {tr("跳过这道题", "Skip this question")}
+              {tr("跳过这道题", "Skip this question", "이 문제 건너뛰기")}
             </button>
           )}
         </div>
@@ -428,8 +479,8 @@ function PathView({
       <div className="mt-5 flex items-center gap-4 border-b border-[var(--border)]">
         {(
           [
-            ["map", tr("地图", "Map")],
-            ["activity", tr("活动", "Activity")],
+            ["map", tr("地图", "Map", "지도")],
+            ["activity", tr("活动", "Activity", "활동")],
           ] as const
         ).map(([value, label]) => (
           <button
@@ -461,14 +512,14 @@ function PathView({
             map={map}
             revision={revision}
             tr={tr}
-            zh={zh}
+            language={language}
           />
         ) : (
           <ActivityTimeline
             events={events}
             objectiveNames={objectiveNames}
             tr={tr}
-            zh={zh}
+            language={language}
           />
         )}
       </div>

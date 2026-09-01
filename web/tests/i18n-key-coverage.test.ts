@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import ts from "typescript";
 
 // Two ways a string escapes translation in this app, both found by play-testing
 // the Korean UI: a `t("…")` call whose key no locale defines (i18next echoes the
@@ -62,13 +63,56 @@ test("every literal t() key is defined in the English locale", () => {
   );
 });
 
-test("no component hardcodes an English/Chinese label pair", () => {
-  // `{ zh: "…", en: "…" }` bypasses i18next entirely, so a third locale has no
-  // way to reach the copy. Route it through t() with the English source as key.
-  const pair = /\{\s*zh:\s*"(?:[^"\\]|\\.)*"\s*,\s*en:\s*"/;
+test("non-Chinese interface languages are not collapsed to English", () => {
+  const collapsed = /startsWith\(["']zh["']\)\s*\?\s*["']zh["']\s*:\s*["']en["']/s;
   const offenders = sources
-    .filter((file) => pair.test(fs.readFileSync(file, "utf8")))
+    .filter((file) => collapsed.test(fs.readFileSync(file, "utf8")))
     .map((file) => path.relative(WEB, file));
 
   assert.deepEqual(offenders, []);
+});
+
+test("hand-rolled locale objects include Korean", () => {
+  // Older features used `{ zh, en }` or `{ cn, en }` objects instead of i18next.
+  // If one remains, Korean silently falls through to English. Three-language
+  // objects are allowed for feature-local dynamic copy that cannot be a key.
+  const offenders = new Set<string>();
+
+  for (const file of sources) {
+    const source = fs.readFileSync(file, "utf8");
+    const tree = ts.createSourceFile(
+      file,
+      source,
+      ts.ScriptTarget.Latest,
+      true,
+      file.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+    );
+
+    const visit = (node: ts.Node) => {
+      if (ts.isObjectLiteralExpression(node)) {
+        const names = new Set(
+          node.properties.flatMap((property) => {
+            if (!ts.isPropertyAssignment(property)) return [];
+            const name = property.name;
+            if (ts.isIdentifier(name) || ts.isStringLiteral(name)) {
+              return [name.text];
+            }
+            return [];
+          }),
+        );
+        if (
+          (names.has("zh") || names.has("cn")) &&
+          names.has("en") &&
+          !names.has("ko")
+        ) {
+          offenders.add(path.relative(WEB, file));
+        }
+      }
+      ts.forEachChild(node, visit);
+    };
+
+    visit(tree);
+  }
+
+  assert.deepEqual([...offenders].sort(), []);
 });
