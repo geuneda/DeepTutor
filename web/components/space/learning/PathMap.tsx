@@ -44,6 +44,16 @@ export const STATUS_META: Record<
   },
 };
 
+const TYPE_LABELS: Record<
+  string,
+  { cn: string; en: string; ko: string }
+> = {
+  memory: { cn: "记忆", en: "Memory", ko: "암기" },
+  concept: { cn: "概念", en: "Concept", ko: "개념" },
+  procedure: { cn: "流程", en: "Procedure", ko: "절차" },
+  design: { cn: "设计", en: "Design", ko: "설계" },
+};
+
 /**
  * The module → objective map, with each objective openable.
  *
@@ -118,8 +128,8 @@ export function PathMap({
                     <span className="flex-1 truncate text-[var(--foreground)]">
                       {kp.name}
                     </span>
-                    <span className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)]">
-                      {kp.type}
+                    <span className="text-[10px] tracking-wide text-[var(--muted-foreground)]">
+                      {typeLabel(kp.type, language)}
                     </span>
                     <span
                       className={`text-xs ${STATUS_META[kp.status].className}`}
@@ -151,6 +161,14 @@ export function PathMap({
       ))}
     </div>
   );
+}
+
+function typeLabel(type: string, language: LearningLanguage): string {
+  const labels = TYPE_LABELS[type.toLowerCase()];
+  if (!labels) return type;
+  if (language === "zh") return labels.cn;
+  if (language === "ko") return labels.ko;
+  return labels.en;
 }
 
 function StatusIcon({ status }: { status: ObjectiveStatus }) {
