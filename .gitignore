@@ -13,7 +13,11 @@ deeptutor/agents/question/reference_papers/
 deeptutor/services/rag/eg_only_for_analysis/
 /docs/
 /site/
-.claude
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/update-deeptutor/
+!.claude/skills/update-deeptutor/SKILL.md
 .agents/
 
 # LaTeX build artifacts
